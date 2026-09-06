@@ -1,0 +1,246 @@
+/* @theme fabric-iq */
+
+/*
+ * Custom Marp theme for the Fabric IQ workshop section.
+ * Minimal, professional palette suited to a technical conference session —
+ * not a marketing deck. Defined as CSS custom properties so the palette can
+ * be re-tuned in one place.
+ *
+ * Usage in a deck's front-matter:
+ *   ---
+ *   marp: true
+ *   theme: fabric-iq
+ *   paginate: true
+ *   ---
+ */
+
+@import 'default';
+
+section {
+  /* ---- Color palette ---- */
+  --fiq-bg: #ffffff;
+  --fiq-fg: #1a1f27;
+  --fiq-muted: #5c6370;
+  --fiq-primary: #0f6cbd;       /* Fabric-blue, headings / links */
+  --fiq-primary-dark: #0a4d8c;  /* title slide background */
+  --fiq-accent: #d97706;        /* warm amber — callouts, alerts, emphasis */
+  --fiq-accent-bg: #fef3e2;
+  --fiq-border: #e1e4e8;
+  --fiq-code-bg: #f6f8fa;
+  --fiq-on-dark: #ffffff;
+
+  /* ---- Type scale ---- */
+  --fiq-font-body: "Segoe UI", "Calibri", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --fiq-font-mono: "Cascadia Code", "SF Mono", "Consolas", "Menlo", monospace;
+
+  background: var(--fiq-bg);
+  color: var(--fiq-fg);
+  font-family: var(--fiq-font-body);
+  font-size: 26px;
+  line-height: 1.45;
+  padding: 48px 64px;
+}
+
+/* ---- Headings ---- */
+
+section h1 {
+  color: var(--fiq-primary);
+  font-size: 1.7em;
+  font-weight: 600;
+  margin: 0 0 0.5em 0;
+  border-bottom: 3px solid var(--fiq-primary);
+  padding-bottom: 0.2em;
+}
+
+section h2 {
+  color: var(--fiq-primary);
+  font-size: 1.3em;
+  font-weight: 600;
+  margin: 0 0 0.5em 0;
+}
+
+section h3 {
+  color: var(--fiq-fg);
+  font-size: 1.05em;
+  font-weight: 600;
+  margin: 0.6em 0 0.3em 0;
+}
+
+/* ---- Body text ---- */
+
+section p {
+  margin: 0.4em 0;
+}
+
+section ul,
+section ol {
+  margin: 0.3em 0;
+  padding-left: 1.1em;
+}
+
+section li {
+  margin: 0.28em 0;
+}
+
+section li::marker {
+  color: var(--fiq-primary);
+}
+
+section li li::marker {
+  color: var(--fiq-muted);
+}
+
+section strong {
+  color: var(--fiq-primary-dark);
+}
+
+section a {
+  color: var(--fiq-primary);
+}
+
+section code {
+  font-family: var(--fiq-font-mono);
+  background: var(--fiq-code-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.35em;
+  font-size: 0.85em;
+}
+
+section pre {
+  background: var(--fiq-code-bg);
+  border: 1px solid var(--fiq-border);
+  border-radius: 6px;
+  padding: 0.8em 1em;
+}
+
+section pre code {
+  background: none;
+  padding: 0;
+}
+
+section table {
+  font-size: 0.82em;
+  border-collapse: collapse;
+}
+
+section table th {
+  background: var(--fiq-primary);
+  color: var(--fiq-on-dark);
+  padding: 0.4em 0.7em;
+}
+
+section table td {
+  padding: 0.35em 0.7em;
+  border-bottom: 1px solid var(--fiq-border);
+}
+
+section table tr:nth-child(even) td {
+  background: var(--fiq-code-bg);
+}
+
+section blockquote {
+  border-left: 4px solid var(--fiq-accent);
+  background: var(--fiq-accent-bg);
+  margin: 0.6em 0;
+  padding: 0.5em 0.9em;
+  font-size: 0.9em;
+  color: var(--fiq-fg);
+}
+
+section blockquote p {
+  margin: 0.2em 0;
+}
+
+/* ---- Footer / pagination ---- */
+
+section::after {
+  color: var(--fiq-muted);
+  font-size: 0.55em;
+}
+
+/* ---- Title slide: section.lead ---- */
+
+section.lead {
+  background: var(--fiq-primary-dark);
+  color: var(--fiq-on-dark);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+section.lead h1 {
+  color: var(--fiq-on-dark);
+  font-size: 2.1em;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+section.lead h2 {
+  color: #cfe3f7;
+  font-weight: 400;
+  font-size: 1.1em;
+}
+
+section.lead p {
+  color: #cfe3f7;
+}
+
+section.lead strong {
+  color: var(--fiq-on-dark);
+}
+
+/* ---- Section-divider slides: section.divider ---- */
+
+section.divider {
+  background: var(--fiq-primary);
+  color: var(--fiq-on-dark);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+section.divider h1,
+section.divider h2 {
+  color: var(--fiq-on-dark);
+  border-bottom: none;
+}
+
+/* ---- Closing / lab-transition slides: section.lab ---- */
+
+section.lab {
+  background: var(--fiq-accent-bg);
+}
+
+section.lab h1 {
+  color: var(--fiq-accent);
+  border-bottom-color: var(--fiq-accent);
+}
+
+/* ---- Utility classes ---- */
+
+/* Callout box, e.g. <div class="callout">**Key point**</div> */
+section .callout {
+  border-left: 5px solid var(--fiq-accent);
+  background: var(--fiq-accent-bg);
+  border-radius: 4px;
+  padding: 0.55em 0.9em;
+  margin: 0.6em 0;
+  font-size: 0.92em;
+}
+
+section .small {
+  font-size: 0.75em;
+  color: var(--fiq-muted);
+}
+
+section .muted {
+  color: var(--fiq-muted);
+}
+
+/* Two-column layout helper */
+section .columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5em;
+  align-items: start;
+}

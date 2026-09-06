@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.DS_Store
+~$*
+BUILD_PLAN.md
+plan.md

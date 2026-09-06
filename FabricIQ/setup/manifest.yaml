@@ -1,0 +1,38 @@
+# manifest.yaml
+#
+# Ordered list of Fabric items that provision_fabric_iq.py imports into the
+# "Fabric IQ" workspace. Order matters: the Eventstream's destination refers
+# to the Eventhouse/KQL DB, and the Notebook's Lakehouse attachment refers to
+# the Lakehouse, so anything that is *referenced* must be imported before the
+# item that references it.
+#
+# Each entry:
+#   name: the exact display name the item will have in the workspace
+#         (must match the fixed naming contract used throughout the labs)
+#   type: the Fabric item type suffix used by `fab import`/`fab create`
+#         (e.g. "Lakehouse", "Eventhouse", "Eventstream", "Notebook")
+#   path: path to the exported item-definition folder, relative to the repo
+#         root (this is what gets passed to `fab import ... -f <path>`)
+#
+# NOTE: if a pre-event dry run shows `fab deploy` (manifest-driven, wraps
+# fabric-cicd) reliably covers all four item types below, provision_fabric_iq.py
+# could be simplified to a single `fab deploy` call instead of looping over
+# this manifest with `fab import`. That substitution is intentionally NOT
+# made here yet -- see the comment in provision_fabric_iq.py's import step.
+
+items:
+  - name: ColdChainLakehouse
+    type: Lakehouse
+    path: artifacts/Lakehouse/ColdChainLakehouse.Lakehouse
+
+  - name: ColdChainEventhouse
+    type: Eventhouse
+    path: artifacts/Eventhouse/ColdChainEventhouse.Eventhouse
+
+  - name: FreezerTelemetryEventstream
+    type: Eventstream
+    path: artifacts/Eventstream/FreezerTelemetryEventstream.Eventstream
+
+  - name: 00_LoadReferenceData
+    type: Notebook
+    path: artifacts/Notebooks/00_LoadReferenceData.Notebook
