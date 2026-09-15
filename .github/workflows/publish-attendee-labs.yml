@@ -57,12 +57,25 @@ jobs:
           # linger from a previous sync.
           find "$DEST" -mindepth 1 -maxdepth 1 ! -name ".git" -exec rm -rf {} +
 
-          rsync -a --exclude=".DS_Store" "$SRC/setup/" "$DEST/setup/"
-          rsync -a --exclude=".DS_Store" "$SRC/modules/" "$DEST/modules/"
-          rsync -a --exclude=".DS_Store" --exclude="HOW-TO-EXPORT.md" "$SRC/artifacts/" "$DEST/artifacts/"
-          rsync -a --exclude=".DS_Store" "$SRC/prerequisites/" "$DEST/prerequisites/"
-          mkdir -p "$DEST/assets"
-          rsync -a --exclude=".DS_Store" --exclude="fallback/" "$SRC/assets/screenshots/" "$DEST/assets/screenshots/"
+          # git doesn't track empty directories (e.g. assets/screenshots/* has no captured
+          # screenshots yet), so a source folder can legitimately be missing from the
+          # checkout. Skip it rather than fail -- it'll start syncing the moment it has
+          # real content.
+          safe_rsync() {
+            local src="$1" dst="$2"; shift 2
+            if [ -d "$src" ]; then
+              mkdir -p "$dst"
+              rsync -a --exclude=".DS_Store" "$@" "$src/" "$dst/"
+            else
+              echo "Skipping missing source dir: $src"
+            fi
+          }
+
+          safe_rsync "$SRC/setup" "$DEST/setup"
+          safe_rsync "$SRC/modules" "$DEST/modules"
+          safe_rsync "$SRC/artifacts" "$DEST/artifacts" --exclude="HOW-TO-EXPORT.md"
+          safe_rsync "$SRC/prerequisites" "$DEST/prerequisites"
+          safe_rsync "$SRC/assets/screenshots" "$DEST/assets/screenshots" --exclude="fallback/"
           cp "$SRC/README-attendee.md" "$DEST/README.md"
 
       - name: Commit and push if changed
