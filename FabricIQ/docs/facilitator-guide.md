@@ -39,11 +39,16 @@ the agenda if the day's order shifts.
 
 See [`agenda.md`](agenda.md) for the full table. Two built-in flex points:
 
-- **Module 00 (20 min)** assumes most attendees pre-ran the setup script — budget this slot as
-  verification/troubleshooting for stragglers, not first-time provisioning for the room.
-- **Module 05 is the buffer.** If Module 03 or 04 (both touch preview UI) run long, compress Module 05's
-  lab to a facilitator-led walkthrough with less hands-on time — do not cut Module 03/04 short, since
-  ontology design and agent patterns are this section's core learning objectives.
+- **Module 00 (40 min)** now assumes most of the room is provisioning live for the first time, not
+  verifying pre-done work — attendees are no longer expected to have run the setup script before
+  arriving. Budget it as real hands-on setup time, and protect it from running over: it took 20 minutes
+  from Module 05's buffer to make room in the agenda, so there's less slack downstream than there used to
+  be. Anyone who *did* pre-run the script skips to Part B of the lab and finishes early — point them
+  ahead to Module 01's reading, or have them help a neighbor, rather than let the room wait idle.
+- **Module 05 is the buffer** — now only 15 minutes to start with. If Module 03 or 04 (both touch preview
+  UI) run long, compress Module 05's lab to a facilitator-led walkthrough with less hands-on time — do
+  not cut Module 03/04 short, since ontology design and agent patterns are this section's core learning
+  objectives.
 
 ## If something breaks live
 

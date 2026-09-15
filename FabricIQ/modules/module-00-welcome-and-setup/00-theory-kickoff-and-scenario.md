@@ -43,9 +43,9 @@ By the end of the day you will have:
   (Module 05).
 
 None of the ontology, agent, or graph items exist yet — those get built live, starting in Module 03. Right
-now, all that exists in your workspace is the plumbing: a Lakehouse with reference data, an Eventhouse
-ready to receive telemetry, an Eventstream, and a notebook. Module 00's lab confirms that plumbing is in
-place before we go any further.
+now, the only thing that needs to exist in your workspace is the plumbing: a Lakehouse with reference
+data, an Eventhouse ready to receive telemetry, an Eventstream, and a notebook. Module 00's lab gets that
+plumbing in place — live, right now, if you haven't already — and confirms it before we go any further.
 
 ## The arc, in one line
 

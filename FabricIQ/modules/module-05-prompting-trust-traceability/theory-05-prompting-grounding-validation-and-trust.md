@@ -1,6 +1,8 @@
 # Module 05 Theory: Prompting, Grounding, Validation, and Trust
 
-**Duration:** 15 minutes
+**Duration:** 10 minutes (this module's time was cut from 35 to 15 minutes total to fund Module 00's
+expanded live setup — see `docs/agenda.md`; trim discussion depth here first if you're still running
+long, before touching the lab)
 **Format:** Presenter-led discussion, no hands-on activity in this part.
 
 **Learning objectives**

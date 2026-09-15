@@ -4,6 +4,11 @@ This folder provisions the plumbing for the Fabric IQ workshop: a `Fabric IQ`
 workspace, pinned to a non-trial capacity, containing a Lakehouse, an
 Eventhouse/KQL database, an Eventstream, and a reference-data notebook.
 
+**Attendees**: you run this live, with the room, as Part A of
+[Lab 00](../modules/module-00-welcome-and-setup/lab-00-environment-setup-and-verify.md) — the steps
+below are the same ones that lab walks you through. Running it here ahead of time is optional (see
+[`prerequisites/PREREQUISITES.md`](../prerequisites/PREREQUISITES.md)), not required.
+
 ## Quick start
 
 Pick whichever launcher matches your OS, or call the Python script directly.
@@ -98,8 +103,8 @@ check there first for the underlying fix.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Command not found: fab` | Fabric CLI isn't installed. | `pip install ms-fabric-cli`, confirm with `fab --version`. See PREREQUISITES.md §3. |
-| Script hangs or fails at "Authentication" | Not signed in, or `fab auth login`'s browser/device-code flow is blocked by a corporate VPN/proxy. | Run `fab auth login` manually and watch for errors. See PREREQUISITES.md §4. |
+| `Command not found: fab` | Fabric CLI isn't installed. | `pip install ms-fabric-cli` (or `pip install -r requirements.txt`), confirm with `fab --version`. See Lab 00, Part A, steps 1 and 3. |
+| Script hangs or fails at "Authentication" | Not signed in, or `fab auth login`'s browser/device-code flow is blocked by a corporate VPN/proxy. | Run `fab auth login` manually and watch for errors. See PREREQUISITES.md §3. |
 | "No capacities were returned by the Fabric CLI" | Your account has no visible/eligible Fabric capacity, or lacks Contributor+ role on one. | Confirm capacity access with your tenant admin. See PREREQUISITES.md §2. |
 | "Capacity looks like a trial capacity" warning | You selected (or only have) an FT1/trial capacity. | Use a non-trial F2+/P1+ capacity — trial capacities don't support Ontology/Graph/Data Agent features at all, and later modules will fail. See PREREQUISITES.md §1. Do not use `--force` to bypass this unless you fully understand later modules won't work. |
 | An import fails with an error mentioning "preview" or "not enabled" | A tenant-level preview setting (Ontology/Data Agent) hasn't been enabled by your Fabric admin. | This can't be fixed live — it needs your tenant admin to enable the setting 2+ weeks ahead of the event. See PREREQUISITES.md §1. |

@@ -16,9 +16,10 @@ footer: 'Fabric IQ Workshop · Module 05 — Prompting, Trust & Traceability'
 **Topics 7–8**
 
 <!-- notes:
-35 min total — 15 min theory, 20 min lab. This is the designated timing buffer: if Modules 03/04
-ran long, compress this module's lab into a facilitator-led walkthrough rather than cutting content
-from 03/04. Do not skip this module's ideas, though — trust/traceability is the responsible-AI
+15 min total — 10 min theory, 5 min lab (cut from 35/15/20 to fund Module 00's expanded live setup —
+see docs/agenda.md). This is still the designated timing buffer on top of that: if Modules 03/04 ran
+long, compress this module's already-short lab into a facilitator-led walkthrough rather than cutting
+content from 03/04. Do not skip this module's ideas, though — trust/traceability is the responsible-AI
 payoff of the whole day.
 -->
 

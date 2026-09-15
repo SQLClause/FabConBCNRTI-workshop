@@ -1,6 +1,9 @@
 # Lab 05: Validate and Audit Agent Responses
 
-**Duration:** 20 minutes
+**Duration:** 5 minutes as scheduled (down from 20 — this module's time was cut to fund Module 00's
+expanded live setup, see `docs/agenda.md`). If Module 03/04 ran on time and there's spare room in the
+schedule, run this hands-on as originally written; otherwise default to a facilitator-led walkthrough on
+the instructor workspace per the note in `slides/module-05-slides.md`.
 **Prerequisites:** Module 04 complete — `ColdChainDataAgent` and `ColdChainOperationsAgent` exist in the
 "Fabric IQ" workspace, both grounded in `ColdChainOntology`, and the `Freezer running warm` Activator rule
 has fired at least once.

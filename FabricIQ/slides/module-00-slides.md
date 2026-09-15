@@ -71,15 +71,14 @@ Fabric IQ doesn't replace any of this — it sits on top of it.
 
 ---
 
-## Environment verification: what should already exist
+## What you'll have when this module ends
 
 - [ ] Workspace named **`Fabric IQ`** on a non-trial capacity
 - [ ] Lakehouse **`ColdChainLakehouse`** with `Customers`, `Stores`, `Freezers` tables
 - [ ] Eventhouse **`ColdChainEventhouse`** / KQL DB **`ColdChainKQLDB`**
 - [ ] Eventstream **`FreezerTelemetryEventstream`** created
-- [ ] You can sign in to the Fabric portal and see this workspace
 
-<p class="small">If any of these are missing, flag it now — Module 00's lab time is built for exactly this.</p>
+<p class="small">Didn't pre-run the setup script? No problem — that's the default, not the exception. We build all of this live in the next 35 minutes.</p>
 
 ---
 
@@ -95,13 +94,17 @@ Fabric IQ doesn't replace any of this — it sits on top of it.
 <!-- _class: lab -->
 <!-- _layout: Section Break Slide -->
 
-## Hands-on lab
+## Hands-on lab (35 min)
 
-**Lab 00 — Setup verification**
+**Lab 00 — Set up & verify**
 
-- Confirm your `Fabric IQ` workspace and items match the checklist above
-- Troubleshoot with the facilitator if anything is missing or greyed out
+- **Part A:** install the Fabric CLI, sign in, and run `provision_fabric_iq.py` live — skip straight to Part B if you already did this before today
+- **Part B:** everyone confirms the `Fabric IQ` workspace and items match the checklist above
 
 📄 `modules/module-00-welcome-and-setup/lab-00-environment-setup-and-verify.md`
 
-<!-- notes: Walk the room during this lab — most first-time issues are tenant preview settings not enabled, covered in PREREQUISITES.md. -->
+<!-- notes: Walk the room during Part A — most first-time issues are either a blocked VPN/proxy or a
+trial capacity slipping through. A trial capacity is a hard stop: pair that attendee with a neighbor
+immediately rather than let them try to troubleshoot it, since it traces back to a tenant-admin setting
+in PREREQUISITES.md that can't be fixed live. Attendees who pre-ran setup finish Part B early — point
+them ahead to Module 01 or have them help a neighbor instead of waiting idle. -->

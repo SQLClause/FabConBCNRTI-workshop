@@ -4,7 +4,7 @@
 
 | Module | Risk | Likelihood | Impact | Mitigation | Fallback asset |
 |---|---|---|---|---|---|
-| 00 – Setup | Attendee didn't pre-run the setup script, or it fails live (auth/permissions/network) | Medium | Low (isolated to individual, doesn't block the room) | Pair stragglers with a neighbor who succeeded; keep one pre-provisioned "instructor" workspace as a screen-share fallback | Instructor's own already-provisioned workspace, screen-shared |
+| 00 – Setup | Most of the room now runs installs + `fab auth login` + provisioning live, simultaneously, for the first time (no longer just a few pre-run stragglers) — individual auth/permissions/network failures are more likely in aggregate, and the room-wide venue network/auth load is higher during this specific 40-minute window | Medium-High | Medium (a cluster of simultaneous failures can eat into the fixed 40-minute block, not just one attendee's time) | Pair anyone who fails with a neighbor who succeeded rather than troubleshooting solo; keep one pre-provisioned "instructor" workspace as a screen-share fallback; the trial-capacity hard-block in `provision_fabric_iq.py` and the matching Lab 00 troubleshooting block exist specifically to stop that one failure mode from eating the room's time — don't let anyone bypass it hoping to fix it later | Instructor's own already-provisioned workspace, screen-shared |
 | 01 – Architecture & Context | Low — mostly discussion/exploration of already-provisioned items | Low | Low | — | — |
 | 02 – Telemetry & Grounding | Eventstream custom-endpoint connection or synthetic generator fails to stream live data | Medium | Medium (lab depends on seeing live data land) | Test the generator against a real tenant within 72 hours of the event; have a pre-recorded short clip of data flowing as backup | `assets/fallback-recordings/LINKS.md` |
 | 03 – Ontology Design | **Highest risk** — Ontology item is (preview), UI can change or misbehave without notice | High | High (core lab of the whole section) | Mandatory presenter dry run within 72 hours; static screenshot fallback sequence prepared in advance | `assets/screenshots/fallback/lab-03/` + narration below |
@@ -43,6 +43,8 @@
 - [ ] Run the full provisioning script + every lab end-to-end in a representative tenant within
       **~72 hours** of the event — preview features change fast, so anything older is unreliable.
 - [ ] Confirm venue network connectivity; Fabric has no offline fallback, so have a mobile-hotspot
-      backup plan for the room (out of this repo's scope, but worth confirming ahead of time).
+      backup plan for the room (out of this repo's scope, but worth confirming ahead of time). This
+      matters more than it used to: Module 00 now has most of the room hitting `fab auth login` and
+      `pip install` simultaneously for ~15-20 minutes, not a handful of stragglers.
 - [ ] Confirm Module 05 can be compressed to discussion-only on short notice, in case Module 03/04 ran
       long.

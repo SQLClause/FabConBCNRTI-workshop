@@ -70,8 +70,8 @@ Confirm your environment matches this state before starting:
    <details>
    <summary>Troubleshooting</summary>
 
-   If the table doesn't appear at all, revisit Module 00's Lab 00 Step 6–7 troubleshooting — this lab
-   assumes that check already passed.
+   If the table doesn't appear at all, revisit Module 00's Lab 00, Part B, Step 11–12 troubleshooting —
+   this lab assumes that check already passed.
    </details>
 
    *Adapted from: [Get started with Fabric IQ](https://learn.microsoft.com/fabric/iq/get-started-with-fabric-iq)*

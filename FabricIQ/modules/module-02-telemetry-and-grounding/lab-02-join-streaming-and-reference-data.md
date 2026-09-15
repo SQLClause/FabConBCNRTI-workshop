@@ -98,8 +98,7 @@ module — watch for trailing spaces or partial copies when circulating. -->
    ```
 
    > ✅ Expected result: `azure-eventhub` installs without errors. If you already ran
-   > `pip install -r setup/requirements.txt` per `prerequisites/PREREQUISITES.md`, this is already done —
-   > skip ahead.
+   > `pip install -r setup/requirements.txt` in Module 00's Part A, this is already done — skip ahead.
 
 9. **Run** the generator:
 
