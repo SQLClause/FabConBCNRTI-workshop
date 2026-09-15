@@ -1,3 +1,27 @@
+# Fabric notebook source
+
+# METADATA ********************
+
+# META {
+# META   "kernel_info": {
+# META     "name": "synapse_pyspark"
+# META   },
+# META   "dependencies": {
+# META     "lakehouse": {
+# META       "default_lakehouse": "__LAKEHOUSE_ID__",
+# META       "default_lakehouse_name": "ColdChainLakehouse",
+# META       "default_lakehouse_workspace_id": "__WORKSPACE_ID__",
+# META       "known_lakehouses": [
+# META         {
+# META           "id": "__LAKEHOUSE_ID__"
+# META         }
+# META       ]
+# META     }
+# META   }
+# META }
+
+# CELL ********************
+
 # =============================================================================
 # 00_LoadReferenceData
 #
@@ -12,22 +36,31 @@
 # Lakehouse, where a Fabric IQ ontology (built live in Module 03) can bind to
 # it as entity properties.
 #
-# PREREQUISITES (see ../Notebooks/HOW-TO-EXPORT.md for full steps):
-#   1. This notebook must have ColdChainLakehouse attached as its default
-#      Lakehouse (so relative "Files/..." paths resolve correctly).
-#   2. The three CSVs must already be uploaded to:
-#        Files/SampleData/stores.csv
-#        Files/SampleData/freezers.csv
-#        Files/SampleData/customers.csv
+# This file is checked in using Fabric's own notebook git-source format (the
+# "# META"-prefixed blocks above and between cells) rather than a generic
+# "# %%"-cell-marker script, so setup/provision_fabric_iq.py can `fab import`
+# it directly -- no hand-built-in-a-dev-tenant export round trip needed. The
+# __LAKEHOUSE_ID__/__WORKSPACE_ID__ placeholders above are substituted with
+# real IDs at import time (see create_notebook_item() in
+# setup/provision_fabric_iq.py), which is also what binds this notebook's
+# default Lakehouse -- no manual "Add data items" step required either. See
+# ../Notebooks/HOW-TO-EXPORT.md for the full story, including why this only
+# works because the notebook's *content* needs no tenant-specific values.
+#
+# PREREQUISITES:
+#   The three CSVs must already be uploaded to:
+#     Files/SampleData/stores.csv
+#     Files/SampleData/freezers.csv
+#     Files/SampleData/customers.csv
+#   (setup/provision_fabric_iq.py's Lakehouse step does this before this
+#   notebook is imported.)
 #
 # RUNNING THIS NOTEBOOK:
-#   Paste this file's contents into a Fabric notebook cell (or split at the
-#   "# %%" markers below into separate cells for a more granular live demo)
-#   and select "Run all". On success, three Delta tables appear under this
-#   Lakehouse's Tables section: Customers, Stores, Freezers.
+#   Open it in the Fabric portal and select "Run all". On success, three
+#   Delta tables appear under this Lakehouse's Tables section: Customers,
+#   Stores, Freezers.
 # =============================================================================
 
-# %%
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
     StructType,
@@ -44,8 +77,15 @@ from pyspark.sql.types import (
 #   abfss://<workspace-id>@onelake.dfs.fabric.microsoft.com/<lakehouse-id>/Files/SampleData
 SAMPLE_DATA_PATH = "Files/SampleData"
 
+# METADATA ********************
 
-# %%
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 def load_csv(file_name: str, schema: StructType):
     """Read one reference CSV from the Lakehouse Files section with an
     explicit schema (safer than schema inference for a workshop -- it fails
@@ -58,8 +98,15 @@ def load_csv(file_name: str, schema: StructType):
         .csv(path)
     )
 
+# METADATA ********************
 
-# %%
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # --- Stores -------------------------------------------------------------
 # StoreId, StoreName, Region, City
 stores_schema = StructType(
@@ -83,8 +130,15 @@ stores_df = load_csv("stores.csv", stores_schema)
 print(f"Stores loaded: {stores_df.count()} rows")
 display(stores_df)
 
+# METADATA ********************
 
-# %%
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # --- Freezers -------------------------------------------------------------
 # FreezerId, StoreId, Model, Capacity, InstallDate
 freezers_schema = StructType(
@@ -109,8 +163,15 @@ freezers_df = load_csv("freezers.csv", freezers_schema)
 print(f"Freezers loaded: {freezers_df.count()} rows")
 display(freezers_df)
 
+# METADATA ********************
 
-# %%
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # --- Customers -------------------------------------------------------------
 # CustomerId, Name, HomeStoreId, LoyaltyTier
 customers_schema = StructType(
@@ -134,8 +195,15 @@ customers_df = load_csv("customers.csv", customers_schema)
 print(f"Customers loaded: {customers_df.count()} rows")
 display(customers_df)
 
+# METADATA ********************
 
-# %%
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+
+# CELL ********************
+
 # --- Verification -----------------------------------------------------------
 # Quick sanity check: join Freezers -> Stores to confirm referential
 # integrity of the reference data before attendees move on to Module 02's
@@ -156,3 +224,10 @@ if unmatched > 0:
     )
 
 print("00_LoadReferenceData completed successfully: Stores, Freezers, Customers tables are ready.")
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }

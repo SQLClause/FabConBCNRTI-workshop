@@ -44,9 +44,18 @@ workspace and import the four items.
 4. Creates a workspace named `Fabric IQ` (or reuses one if it already exists).
 5. Locates the `artifacts/` folder (using the local checkout this script
    lives in, or cloning the repo fresh if run standalone).
-6. Imports, in order: `ColdChainLakehouse` (Lakehouse) → `ColdChainEventhouse`
-   (Eventhouse) → `FreezerTelemetryEventstream` (Eventstream) →
-   `00_LoadReferenceData` (Notebook).
+6. Provisions, in order:
+   - `ColdChainLakehouse` (Lakehouse) — created via `fab mkdir` + `fab cp`
+     (the three sample CSVs), since `fab export`/`fab import` don't support
+     the Lakehouse item type at all.
+   - `ColdChainEventhouse` (Eventhouse) → `FreezerTelemetryEventstream`
+     (Eventstream) — `fab import`'d from a pre-captured, tenant-verified
+     item-definition folder (see each item's `HOW-TO-EXPORT.md`).
+   - `00_LoadReferenceData` (Notebook) — `fab import`'d directly from its
+     checked-in git-source `.py` file, with its default-Lakehouse binding
+     filled in at import time (real Lakehouse/workspace IDs substituted into
+     the file's placeholders) — no pre-captured export needed, since a
+     notebook's git-source format is public and plain-text.
 7. Verifies all four items landed in the workspace.
 8. Prints a summary with a workspace deep link and a pointer to
    `modules/module-00-welcome-and-setup/lab-00-environment-setup-and-verify.md`.
@@ -100,23 +109,62 @@ check there first for the underlying fix.
 
 ## For maintainers: judgment calls made while writing this script
 
-- **Auth check command**: `fab` was not confirmed (during this authoring
-  pass, without a live tenant) to expose a dedicated `whoami`/`auth status`
-  subcommand. The script uses a harmless `fab -c "ls ."` call as an auth
-  probe instead. Validate against `fab --help` during the pre-event dry run
-  and swap in a dedicated status command if one exists.
-- **Capacity listing parsing**: the exact column layout of
-  `fab -c "ls .capacities -l"` output wasn't verified against a live tenant.
-  The script takes the first whitespace-separated token as the capacity name
-  and scans the full line for trial-SKU keywords (`trial`, `ft1`, `free`).
-  Validate and tighten this parsing during the pre-event dry run.
+- **Auth check command**: confirmed live (fab 0.1.10) that `fab auth status`
+  exits 0 and prints `✓ Logged in to ...` when authenticated, non-zero
+  otherwise. The script uses that directly (`is_authenticated()`).
+- **Capacity listing parsing**: confirmed live that
+  `fab -c "ls .capacities -l"` columns (`name`, `id`, `sku`, `region`,
+  `state`, `subscriptionId`, `resourceGroup`, `admins`, `tags`) are padded
+  with runs of 2+ spaces, and that capacity names themselves can contain
+  single spaces (e.g. `Premium Per User - Reserved.Capacity`) — a plain
+  `.split()` truncates those to their first word. `list_capacities()` splits
+  on `\s{2,}` instead, and checks the `sku` column (plus the full line as a
+  fallback) for trial-SKU keywords (`trial`, `ft1`, `free`).
+- **Lakehouse provisioning**: `fab export`/`fab import` do not support the
+  Lakehouse item type at all — confirmed via
+  `fabric_cli/core/fab_config/command_support.yaml` in the installed
+  `ms-fabric-cli` package, which lists `lakehouse` in neither command's
+  `supported_items`. `create_lakehouse_item()` uses `fab mkdir` + `fab cp`
+  instead (one `cp` per file — local-to-OneLake copy doesn't support
+  directories), and confirmed live that the destination folder must be
+  `mkdir`'d before `cp` will write into it (it does not create intermediate
+  folders implicitly).
+- **Notebook provisioning**: confirmed live that a Notebook's git-source
+  `.py` format (`# Fabric notebook source` / `# METADATA` / `# CELL`
+  markers — see
+  <https://learn.microsoft.com/rest/api/fabric/articles/item-management/definitions/notebook-definition>)
+  can be `fab import`'d directly with `--format .py`, and that the
+  `dependencies.lakehouse` metadata block in that same file is what binds
+  the notebook's default Lakehouse (the same block Fabric itself writes when
+  you attach a Lakehouse via the portal). `create_notebook_item()`
+  substitutes the real workspace/Lakehouse IDs into that file's
+  `__LAKEHOUSE_ID__`/`__WORKSPACE_ID__` placeholders at import time. Ran the
+  imported notebook end-to-end against a throwaway workspace as part of this
+  validation pass — all three Delta tables (`Stores`, `Freezers`,
+  `Customers`) landed correctly.
 - **`fab import` vs `fab deploy`**: per `BUILD_PLAN.md`, `fab deploy`
   (manifest-driven, wraps `fabric-cicd`) is the preferred long-term path if a
-  pre-event dry run confirms it covers all four item types used here. This
-  script deliberately uses the more verbose but individually verifiable
-  per-item `fab import` loop until that's confirmed — see the comment above
-  `import_items()` in `provision_fabric_iq.py`.
+  pre-event dry run confirms it covers the Eventhouse/Eventstream item types.
+  This script deliberately uses the more verbose but individually verifiable
+  per-item `fab import` loop for those two until that's confirmed — see the
+  comment above `import_items()` in `provision_fabric_iq.py`. It doesn't
+  apply to the Lakehouse or Notebook either way, since neither goes through
+  `fab import` from a pre-captured folder anymore.
 - **Notebook execution**: the script does not attempt `fab job run` (or
   similar) to auto-run `00_LoadReferenceData` after import — this was a
   deliberate pedagogical choice (see "What this script explicitly does NOT
-  do" above), not a technical limitation.
+  do" above), not a technical limitation. Separately: `fab job run`'s own
+  `--timeout` flag crashes client-side in fab 0.1.10 (`'<' not supported
+  between instances of 'int' and 'str'`) even though the job itself starts
+  fine server-side — a `fab` CLI bug, not something this script's design
+  works around, since it never calls `job run` anyway. Worth knowing if you
+  manually run the notebook from a terminal rather than the portal.
+- **Eventhouse KQL schema on import**: still unresolved (see
+  `artifacts/Eventhouse/HOW-TO-EXPORT.md`'s "Note on `fab import` and KQL
+  database contents") — no `fab` command or Fabric-audience `fab api` call
+  was found that can execute a `.kql` script against a KQL database directly
+  (Kusto's own query/management endpoint needs its own token audience, which
+  isn't one of `fab api`'s supported audiences: `fabric`, `storage`,
+  `azure`, `powerbi`). If the imported Eventhouse doesn't carry the
+  Queryset-created tables/view, re-running `ColdChainKQLDB.kql` stays a
+  manual step.

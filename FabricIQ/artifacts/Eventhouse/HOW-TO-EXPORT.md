@@ -18,17 +18,26 @@ well-documented and doesn't require a live tenant to get right.
 
 ## Steps (do this once, in a dev/test tenant, ahead of the event)
 
-1. In your scratch/dev workspace (see `../Lakehouse/HOW-TO-EXPORT.md` step 1),
-   select **+ New item > Eventhouse**, and name it exactly:
+1. Sign in to the Fabric portal and open (or create) a workspace to use as a
+   scratch/dev workspace for building this template — it does **not** need to
+   be named "Fabric IQ" (that name is reserved for the workspace the
+   provisioning script creates live during the workshop). Note this
+   workspace only needs to exist in your own dev/test tenant, purely to
+   build and export this one item — it's unrelated to the Lakehouse or
+   Notebook, both of which the provisioning script now creates/imports
+   directly with no dev-tenant hand-build step (see `setup/manifest.yaml`
+   and `create_lakehouse_item()`/`create_notebook_item()` in
+   `setup/provision_fabric_iq.py`).
+2. In that workspace, select **+ New item > Eventhouse**, and name it exactly:
    ```
    ColdChainEventhouse
    ```
-2. Fabric automatically creates a default KQL database inside the Eventhouse.
+3. Fabric automatically creates a default KQL database inside the Eventhouse.
    Rename that database to exactly:
    ```
    ColdChainKQLDB
    ```
-3. Open a **KQL Queryset** against `ColdChainKQLDB` and run
+4. Open a **KQL Queryset** against `ColdChainKQLDB` and run
    [`ColdChainKQLDB.kql`](ColdChainKQLDB.kql) from this folder, section by
    section (or all at once — each `.create` statement is idempotent via
    `ifnotexists`-safe re-runs, except the materialized view create, which will
@@ -37,24 +46,24 @@ well-documented and doesn't require a live tenant to get right.
    - `StoresDim` / `FreezersDim` (dimension tables, seeded with the same data
      as `artifacts/SampleData/stores.csv` and `freezers.csv`)
    - `FreezerTelemetryEnriched` (the materialized view combining the two)
-4. Verify with a quick query in the Queryset:
+5. Verify with a quick query in the Queryset:
    ```kql
    FreezerTelemetryEnriched | count
    ```
    This should return 15 (one row will appear once the Eventstream starts
    pushing data for each of the 15 freezers — before any data arrives, the
    view exists but is empty, which is expected).
-5. From your terminal, with the Fabric CLI installed and authenticated:
+6. From your terminal, with the Fabric CLI installed and authenticated:
 
    ```bash
    fab export "<dev-workspace-name>.Workspace/ColdChainEventhouse.Eventhouse" -o artifacts/Eventhouse/
    ```
 
    Run this from the repo root so `-o` resolves to this folder.
-6. Confirm the exported files landed under
+7. Confirm the exported files landed under
    `artifacts/Eventhouse/ColdChainEventhouse.Eventhouse/`, alongside this
    README and `ColdChainKQLDB.kql`.
-7. Commit the exported folder (and the `.kql` script, which is already
+8. Commit the exported folder (and the `.kql` script, which is already
    committed) to git.
 
 ## Note on `fab import` and KQL database contents
@@ -65,7 +74,7 @@ current coverage) but **may or may not** carry the table/materialized-view
 definitions created via the Queryset. **Validate this explicitly** during the
 presenter's pre-event dry run:
 
-- If the imported Eventhouse already has the tables/view from step 3, no
+- If the imported Eventhouse already has the tables/view from step 4, no
   further action is needed.
 - If not, `setup/provision_fabric_iq.py` (or a manual one-time step called out
   in `lab-02`) needs to re-run `ColdChainKQLDB.kql` against each attendee's

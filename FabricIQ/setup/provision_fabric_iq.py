@@ -15,8 +15,12 @@ WHAT THIS SCRIPT DOES:
     4. Creates (or reuses) a "Fabric IQ" workspace pinned to that capacity.
     5. Resolves where the `artifacts/` folder lives (local checkout, or a
        fresh `git clone` if this script was handed out standalone).
-    6. Imports the Lakehouse, Eventhouse, Eventstream, and Notebook items,
-       in that dependency order, from manifest.yaml.
+    6. Provisions the Lakehouse, Eventhouse, Eventstream, and Notebook items,
+       in that dependency order, from manifest.yaml. The Lakehouse is
+       created via `fab mkdir` + `fab cp` (the sample CSVs); the other three
+       are `fab import`'d from a pre-captured item-definition folder --
+       `fab export`/`fab import` do not support the Lakehouse item type at
+       all, see artifacts/Lakehouse/HOW-TO-EXPORT.md.
     7. Verifies the workspace now contains all four expected items.
     8. Prints a summary with a deep link into the workspace and a pointer to
        modules/module-00-welcome-and-setup/lab-00-environment-setup-and-verify.md.
@@ -106,7 +110,14 @@ class ProvisioningError(Exception):
 class ManifestItem:
     name: str
     type: str
-    path: str
+    # "import" (fab import -i <path>), "create" (fab mkdir + fab cp), or
+    # "notebook_source" (fab import -i <source_py, placeholder-substituted>)
+    mode: str = "import"
+    path: Optional[str] = None  # mode: import only
+    sample_data_dir: Optional[str] = None  # mode: create only
+    sample_data_dest: Optional[str] = None  # mode: create only
+    source_py: Optional[str] = None  # mode: notebook_source only
+    default_lakehouse: Optional[str] = None  # mode: notebook_source only
 
 
 # =============================================================================
@@ -190,13 +201,9 @@ def check_fab_installed(dry_run: bool) -> str:
 
 
 def is_authenticated(dry_run: bool) -> bool:
-    # NOTE: as of this authoring pass, `fab` was not confirmed to have a
-    # dedicated "whoami"/"auth status" subcommand in the CLI reference
-    # available to us. We use a lightweight, harmless listing call as an
-    # auth probe instead: if it fails, we treat that as "not signed in."
-    # Validate this against `fab --help`/`fab auth --help` during the
-    # pre-event dry run and swap in a dedicated status command if one exists.
-    result = fab_c("ls .", dry_run=dry_run, allow_dry_run_execute=True)
+    # `fab auth status` (confirmed live against fab 0.1.10) exits 0 and
+    # prints "Logged in to ..." when authenticated, non-zero otherwise.
+    result = fab(["auth", "status"], dry_run=dry_run, allow_dry_run_execute=True)
     return result.returncode == 0
 
 
@@ -247,11 +254,12 @@ def ensure_authenticated(dry_run: bool, non_interactive: bool) -> None:
 @dataclass
 class Capacity:
     name: str
+    sku: str
     raw_line: str
 
     @property
     def is_trial(self) -> bool:
-        lowered = self.raw_line.lower()
+        lowered = f"{self.sku} {self.raw_line}".lower()
         return any(keyword in lowered for keyword in TRIAL_SKU_KEYWORDS)
 
 
@@ -271,15 +279,17 @@ def list_capacities(dry_run: bool) -> list[Capacity]:
         line = line.strip()
         if not line or line.lower().startswith(("name", "-", "capacity")):
             continue  # skip blank lines and a probable header row
-        # Column layout for `fab -c "ls .capacities -l"` output was not
-        # verified against a live tenant during this authoring pass. We take
-        # the first whitespace-separated token as the capacity name and keep
-        # the full line for trial-SKU keyword matching and display. Validate
-        # against real output during the pre-event dry run and tighten this
-        # parsing (e.g. splitting out SKU/region into their own columns for
-        # a nicer menu) once the real format is confirmed.
-        name = line.split()[0]
-        capacities.append(Capacity(name=name, raw_line=line))
+        # Confirmed live against fab 0.1.10: `fab -c "ls .capacities -l"`
+        # columns are "name  id  sku  region  state  subscriptionId
+        # resourceGroup  admins  tags", padded with runs of 2+ spaces. A
+        # plain .split() truncates any capacity name containing a space
+        # (e.g. "Premium Per User - Reserved.Capacity" would parse as just
+        # "Premium") -- split on 2+-space runs instead so multi-word names
+        # survive intact.
+        columns = re.split(r"\s{2,}", line)
+        name = columns[0]
+        sku = columns[2] if len(columns) > 2 else ""
+        capacities.append(Capacity(name=name, sku=sku, raw_line=line))
 
     if not capacities:
         raise ProvisioningError(
@@ -468,7 +478,150 @@ def load_manifest(artifact_root: Path) -> list[ManifestItem]:
     items = data.get("items", []) if data else []
     if not items:
         raise ProvisioningError(f"manifest.yaml at {manifest_path} has no items.")
-    return [ManifestItem(name=i["name"], type=i["type"], path=i["path"]) for i in items]
+    return [
+        ManifestItem(
+            name=i["name"],
+            type=i["type"],
+            mode=i.get("mode", "import"),
+            path=i.get("path"),
+            sample_data_dir=i.get("sample_data_dir"),
+            sample_data_dest=i.get("sample_data_dest"),
+            source_py=i.get("source_py"),
+            default_lakehouse=i.get("default_lakehouse"),
+        )
+        for i in items
+    ]
+
+
+def create_lakehouse_item(
+    workspace_path: str,
+    item: ManifestItem,
+    artifact_root: Path,
+    *,
+    dry_run: bool,
+    force: bool,
+) -> tuple[bool, str]:
+    """Create a `mode: create` item (currently just the Lakehouse) via
+    `fab mkdir`, then seed it with local files via `fab cp` -- one call per
+    file, since local-to-OneLake `cp` doesn't support directories.
+
+    This exists because `fab export`/`fab import` do not support the
+    Lakehouse item type at all (it's a container object, not a
+    definition-based item) -- see artifacts/Lakehouse/HOW-TO-EXPORT.md.
+    """
+    target = f"{workspace_path}/{item.name}.{item.type}"
+
+    mkdir_result = fab(["mkdir", target], dry_run=dry_run)
+    if dry_run:
+        status = "dry-run"
+    elif mkdir_result.returncode == 0:
+        status = "created"
+    else:
+        # `mkdir` has no force/overwrite flag, and fails if the item already
+        # exists. Treat that specific case as a reuse (matching how workspace
+        # reuse already works elsewhere in this script) instead of a failure.
+        exists_result = fab_c(f'exists "{target}"', allow_dry_run_execute=True)
+        if "true" in exists_result.stdout.strip().lower():
+            status = "already exists, reused"
+        else:
+            return False, (mkdir_result.stderr or mkdir_result.stdout).strip()
+
+    if not item.sample_data_dir:
+        return True, status
+
+    source_dir = artifact_root / item.sample_data_dir
+    if not dry_run and not source_dir.exists():
+        return False, f"Sample data source not found: {source_dir}"
+
+    # `fab cp` (local-to-OneLake) refuses to write into a destination folder
+    # that doesn't exist yet -- confirmed live: it does NOT create
+    # intermediate folders implicitly, unlike a typical blob-store `cp -r`.
+    # So the destination folder must be `mkdir`'d first. If it already exists
+    # (e.g. this script is being re-run), `mkdir` fails with
+    # "PathAlreadyExists" -- harmless, so it isn't treated as fatal here; a
+    # genuine problem (permissions, etc.) will surface from the `cp` calls
+    # below instead, with a clear per-file error.
+    dest_folder = f"{target}/{item.sample_data_dest}"
+    fab(["mkdir", dest_folder], dry_run=dry_run)
+
+    csv_paths = sorted(source_dir.glob("*.csv")) if source_dir.exists() else []
+    for csv_path in csv_paths:
+        dest = f"{target}/{item.sample_data_dest}/{csv_path.name}"
+        cp_cmd = ["cp", str(csv_path), dest]
+        if force:
+            cp_cmd.append("-f")
+        cp_result = fab(cp_cmd, dry_run=dry_run)
+        if not dry_run and cp_result.returncode != 0:
+            error_text = (cp_result.stderr or cp_result.stdout).strip()
+            return False, f"Failed to copy {csv_path.name}: {error_text}"
+
+    return True, f"{status}, sample data seeded" if not dry_run else "dry-run"
+
+
+def create_notebook_item(
+    workspace_path: str,
+    item: ManifestItem,
+    artifact_root: Path,
+    *,
+    dry_run: bool,
+    force: bool,
+) -> tuple[bool, str]:
+    """Create a `mode: notebook_source` item by `fab import`-ing its raw,
+    checked-in notebook git-source `.py` file directly -- no pre-exported
+    item-definition folder needed.
+
+    Unlike Eventhouse/Eventstream (whose item-definition JSON shape isn't
+    publicly documented), a Notebook's git-source `.py` format IS public and
+    plain-text (confirmed live against fab 0.1.10 + documented at
+    https://learn.microsoft.com/rest/api/fabric/articles/item-management/definitions/notebook-definition),
+    so the checked-in source *is* the real importable artifact -- see
+    artifacts/Notebooks/HOW-TO-EXPORT.md.
+
+    If `item.default_lakehouse` names another manifest item (by its `name`),
+    this resolves that Lakehouse's real item ID and this workspace's real ID,
+    then substitutes them into the `__LAKEHOUSE_ID__`/`__WORKSPACE_ID__`
+    placeholders in the source file before import -- this is what binds the
+    notebook's default Lakehouse (confirmed live: this is the same
+    `dependencies.lakehouse` metadata block Fabric itself writes when you
+    attach a Lakehouse via the portal), removing the manual "Add data items"
+    step entirely.
+    """
+    target = f"{workspace_path}/{item.name}.{item.type}"
+    source_path = artifact_root / item.source_py
+    if not dry_run and not source_path.exists():
+        return False, f"Source path not found: {source_path}"
+
+    content = source_path.read_text(encoding="utf-8") if source_path.exists() else ""
+
+    if item.default_lakehouse:
+        lakehouse_target = f"{workspace_path}/{item.default_lakehouse}.Lakehouse"
+        ws_result = fab(["get", workspace_path, "-q", "id"], dry_run=dry_run, allow_dry_run_execute=True)
+        lh_result = fab(["get", lakehouse_target, "-q", "id"], dry_run=dry_run, allow_dry_run_execute=True)
+        workspace_id = ws_result.stdout.strip() if ws_result.returncode == 0 else ""
+        lakehouse_id = lh_result.stdout.strip() if lh_result.returncode == 0 else ""
+        if not dry_run and (not workspace_id or not lakehouse_id):
+            return False, (
+                f"Could not resolve IDs to bind default Lakehouse '{item.default_lakehouse}' "
+                "(it must be provisioned earlier in manifest.yaml's item order)"
+            )
+        content = content.replace("__LAKEHOUSE_ID__", lakehouse_id or "__LAKEHOUSE_ID__")
+        content = content.replace("__WORKSPACE_ID__", workspace_id or "__WORKSPACE_ID__")
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="fabric-iq-notebook-"))
+    try:
+        (tmp_dir / "notebook-content.py").write_text(content, encoding="utf-8")
+        cmd = ["import", target, "-i", str(tmp_dir), "--format", ".py"]
+        if force:
+            cmd.append("-f")
+        result = fab(cmd, dry_run=dry_run)
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    if dry_run:
+        return True, "dry-run"
+    if result.returncode == 0:
+        return True, "imported"
+    return False, (result.stderr or result.stdout).strip()
 
 
 def import_items(
@@ -479,20 +632,48 @@ def import_items(
     dry_run: bool,
     force: bool,
 ) -> list[tuple[ManifestItem, bool, str]]:
-    """Import each manifest item via `fab import ... -f`, in manifest order.
+    """Provision each manifest item in manifest order.
+
+    Three modes, per item:
+    - `mode: import` (Eventhouse, Eventstream): `fab import ... -f` from a
+      pre-captured, tenant-verified item-definition folder -- these item
+      types' definition JSON shape isn't publicly documented, so it can only
+      come from a real `fab export` against a dev tenant.
+    - `mode: create` (Lakehouse): `fab mkdir` + `fab cp`, since
+      `fab export`/`fab import` don't support the Lakehouse item type at all
+      -- see create_lakehouse_item() above.
+    - `mode: notebook_source` (Notebook): `fab import` directly from the
+      checked-in `.py` source, since a Notebook's git-source format IS
+      publicly documented and plain-text -- see create_notebook_item() above.
 
     Preferred path per BUILD_PLAN.md: try `fab deploy` (manifest-driven,
-    wraps fabric-cicd) first, since it could cover all four item types in
-    one shot. That substitution is NOT made here -- it needs a pre-event
-    dry run to confirm `fab deploy`'s coverage of Lakehouse/Eventhouse/
-    Eventstream/Notebook actually matches what this manifest expects. Until
-    that's validated, this script uses the more verbose but individually
-    verifiable per-item `fab import` loop below. If/when `fab deploy` is
-    confirmed to work for all four types, this loop can be replaced with a
-    single `fab deploy -f manifest.yaml`-style call.
+    wraps fabric-cicd) first for the import-mode items, since it could cover
+    both of them in one shot. That substitution is NOT made here -- it needs
+    a pre-event dry run to confirm `fab deploy`'s coverage of
+    Eventhouse/Eventstream actually matches what this manifest expects.
+    Until that's validated, this script uses the more verbose but
+    individually verifiable per-item `fab import` loop below. If/when
+    `fab deploy` is confirmed to work, that branch can be replaced with a
+    single `fab deploy -f manifest.yaml`-style call; the Lakehouse's
+    `mode: create` and the Notebook's `mode: notebook_source` branches are
+    unaffected either way.
     """
     results: list[tuple[ManifestItem, bool, str]] = []
     for item in items:
+        if item.mode == "create":
+            ok, detail = create_lakehouse_item(
+                workspace_path, item, artifact_root, dry_run=dry_run, force=force
+            )
+            results.append((item, ok, detail))
+            continue
+
+        if item.mode == "notebook_source":
+            ok, detail = create_notebook_item(
+                workspace_path, item, artifact_root, dry_run=dry_run, force=force
+            )
+            results.append((item, ok, detail))
+            continue
+
         source_path = artifact_root / item.path
         if not dry_run and not source_path.exists():
             results.append((item, False, f"Source path not found: {source_path}"))
@@ -566,9 +747,11 @@ def print_summary(
 
     if not all_found:
         print(
-            "\nSome expected items are missing. Re-run this script with --force to retry the "
-            "import step, or import the missing item(s) manually with:\n"
-            f'    fab import "{workspace_name}.Workspace/<Name>.<Type>" -i artifacts/<Type>/<Name>.<Type> -f'
+            "\nSome expected items are missing. Re-run this script with --force to retry, or "
+            "provision the missing item(s) manually:\n"
+            f'    Lakehouse:   fab mkdir "{workspace_name}.Workspace/<Name>.Lakehouse"\n'
+            f'                 fab cp artifacts/SampleData/<file>.csv "{workspace_name}.Workspace/<Name>.Lakehouse/Files/SampleData/<file>.csv"\n'
+            f'    Everything else: fab import "{workspace_name}.Workspace/<Name>.<Type>" -i artifacts/<Type>/<Name>.<Type> -f'
         )
 
     print(f"\nNext step: {LAB00_PATH}")
@@ -663,11 +846,11 @@ def main(argv: Optional[list[str]] = None) -> int:
         items = load_manifest(artifact_root)
         print(f"Loaded {len(items)} item(s) from manifest.yaml: " + ", ".join(f"{i.name}.{i.type}" for i in items))
 
-        print("\n--- Step 6/7: Importing items ---")
+        print("\n--- Step 6/7: Provisioning items ---")
         import_results = import_items(workspace_path, items, artifact_root, dry_run=args.dry_run, force=args.force)
         for item, ok, detail in import_results:
             if not ok:
-                print(f"  WARNING: failed to import {item.name}.{item.type}: {detail}")
+                print(f"  WARNING: failed to provision {item.name}.{item.type}: {detail}")
                 if "not enabled" in detail.lower() or "preview" in detail.lower() or "tenant setting" in detail.lower():
                     print(f"  HINT: this looks like a tenant preview-setting gap. See {PREREQUISITES_PATH}, section 1.")
 

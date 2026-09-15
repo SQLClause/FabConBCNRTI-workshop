@@ -130,19 +130,50 @@ reading layout names.
 
 These are called out inline in the relevant files too, but collected here for visibility:
 
-- **`fab` CLI assumptions unverified against a live tenant**: the auth-check probe (`fab -c "ls ."`) and
-  the capacity-list output parsing in `provision_fabric_iq.py` were written from documentation, not a
-  live test. `setup/README.md`'s "For maintainers" section has the specifics to check.
+- **RESOLVED (live-validated in a later session, fab 0.1.10, against a real tenant/capacity)**:
+  - `fab auth status` and the `fab -c "ls .capacities -l"` column layout — both confirmed; the capacity
+    parsing had a real bug (multi-word capacity names got truncated to their first word by a plain
+    `.split()`), now fixed. See `setup/README.md`'s "For maintainers" section for specifics.
+  - **Lakehouse provisioning**: `fab export`/`fab import` do NOT support the Lakehouse item type at all
+    (confirmed via `ms-fabric-cli`'s own `command_support.yaml`, not just guessed). `provision_fabric_iq.py`
+    now provisions it via `fab mkdir` + `fab cp` instead (see `create_lakehouse_item()`) — no
+    `artifacts/Lakehouse/` export folder is needed or expected anymore; `artifacts/Lakehouse/HOW-TO-EXPORT.md`
+    was deleted since there's nothing left to export.
+  - **Notebook provisioning**: a Notebook's git-source `.py` format is public/documented and plain-text,
+    so `00_LoadReferenceData` is now `fab import`'d directly from `artifacts/Notebooks/00_LoadReferenceData.py`
+    (rewritten into that real format), with its default-Lakehouse binding filled in at import time via a
+    placeholder substitution (`__LAKEHOUSE_ID__`/`__WORKSPACE_ID__`) — see `create_notebook_item()`. No
+    dev-tenant hand-build/export is needed for this item either; `artifacts/Notebooks/HOW-TO-EXPORT.md` was
+    deleted. Ran the imported notebook end-to-end in a throwaway workspace: all three Delta tables
+    (`Stores`, `Freezers`, `Customers`) landed correctly with real reference data.
+  - So `artifacts/{Eventhouse,Eventstream}/HOW-TO-EXPORT.md` are the only two of the original four
+    HOW-TO-EXPORT.md files still needed — those two item types' definition JSON shape genuinely isn't
+    public, so they still require a real `fab export` from a hand-built dev-tenant item. **Neither has
+    actually been captured yet** (same gap as before, just narrower) — the KQL script and Eventstream
+    topology instructions are real and correct, but the importable `.Eventhouse/`/`.Eventstream/` folders
+    under `artifacts/` don't exist yet.
+- **NEW gap found while live-testing (not resolved, and intentionally not addressed this pass — see
+  `setup/README.md`'s "What this script explicitly does NOT do", which a later session was explicitly
+  told to keep as-is)**: `lab-00`'s checkpoint and `lab-01`/`lab-02`'s prerequisites all assume
+  `ColdChainLakehouse`'s `Customers`/`Stores`/`Freezers` tables are **already populated** by the time
+  `lab-00` finishes — but nothing in the current design (script or labs) actually runs
+  `00_LoadReferenceData` before then; running it is only ever framed as a troubleshooting fallback in
+  `lab-00`, never a golden-path step anywhere in Modules 00-02. Either a lab needs an explicit "run this
+  notebook" step added, or the provisioning script needs to run it (which would mean dropping that bullet
+  from "does NOT do") — a real product decision, not something to silently resolve either way.
 - **`fab import` vs `fab deploy`**: the script uses the more verbose but individually-verifiable
-  `fab import` loop; `fab deploy` (manifest-driven) is the preferred long-term path *if* a pre-event dry
-  run confirms it covers all four item types used here.
-- **Whether Lakehouse import auto-populates tables from the bundled CSVs**, or whether running
-  `00_LoadReferenceData` is required either way — the script treats running the notebook as a deliberate,
-  visible lab step regardless, so this is lower-risk, but worth confirming.
-- **The `artifacts/{Lakehouse,Eventhouse,Eventstream,Notebooks}/HOW-TO-EXPORT.md` files** describe how
-  the presenter should generate the *real* `fab export`-produced item definitions from a dev tenant —
-  this hasn't been done yet against a live tenant; the KQL script and notebook code are real and correct,
-  but the actual importable item-definition folders (`.Lakehouse/`, `.Eventhouse/`, etc.) don't exist yet.
+  `fab import` loop for Eventhouse/Eventstream; `fab deploy` (manifest-driven) is the preferred long-term
+  path *if* a pre-event dry run confirms it covers those two item types. Doesn't apply to the Lakehouse or
+  Notebook either way (see above).
+- **Eventhouse KQL schema on import**: still open — no `fab` command or Fabric-audience `fab api` call was
+  found that can execute a `.kql` script against a KQL database directly (Kusto's own query/management
+  endpoint needs a token audience `fab api` doesn't expose). If the imported Eventhouse doesn't carry the
+  Queryset-created tables/view, re-running `ColdChainKQLDB.kql` stays a manual step — see
+  `artifacts/Eventhouse/HOW-TO-EXPORT.md`.
+- **`fab job run --timeout` crashes client-side** in fab 0.1.10 (`'<' not supported between instances of
+  'int' and 'str'`) even though the job itself starts fine server-side (confirmed by polling
+  `fab job run-status` separately). Doesn't affect `provision_fabric_iq.py` (which never calls `job run`),
+  but worth knowing if you manually run the notebook from a terminal.
 - **Module 03's exact click-paths** (ontology UI) were grounded against live Microsoft Learn docs at
   authoring time but not a live tenant walkthrough — this is the single highest-risk lab in the section
   (preview UI). See `docs/risk-fallback-plan.md`.

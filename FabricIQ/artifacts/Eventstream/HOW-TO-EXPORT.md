@@ -13,9 +13,12 @@ tenant-verified definition into this folder before the event.
 
 ## Steps (do this once, in a dev/test tenant, ahead of the event)
 
-1. In your scratch/dev workspace, create `ColdChainLakehouse` and
-   `ColdChainEventhouse` first (see the sibling `HOW-TO-EXPORT.md` files) —
-   the Eventstream's destination needs the KQL DB to already exist.
+1. In your scratch/dev workspace, create `ColdChainEventhouse` and its
+   `ColdChainKQLDB` database first (see `../Eventhouse/HOW-TO-EXPORT.md`) —
+   the Eventstream's destination needs the KQL DB to already exist. (The
+   Lakehouse is unrelated to this item and doesn't need to exist here — the
+   provisioning script creates it directly with no dev-tenant hand-build
+   step, see `../Lakehouse`'s entry in `setup/manifest.yaml`.)
 2. Select **+ New item > Eventstream**, and name it exactly:
    ```
    FreezerTelemetryEventstream
