@@ -14,7 +14,7 @@ on:
     branches: [main]
     paths:
       - "FabricIQ/setup/**"
-      - "FabricIQ/modules/**"
+      - "FabricIQ/modules/**/lab-*"
       - "FabricIQ/artifacts/**"
       - "FabricIQ/prerequisites/**"
       - "FabricIQ/assets/screenshots/**"
