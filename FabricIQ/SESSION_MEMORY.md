@@ -165,10 +165,16 @@ These are called out inline in the relevant files too, but collected here for vi
   `fab import` loop for Eventhouse/Eventstream; `fab deploy` (manifest-driven) is the preferred long-term
   path *if* a pre-event dry run confirms it covers those two item types. Doesn't apply to the Lakehouse or
   Notebook either way (see above).
-- **Eventhouse KQL schema on import**: still open — no `fab` command or Fabric-audience `fab api` call was
-  found that can execute a `.kql` script against a KQL database directly (Kusto's own query/management
-  endpoint needs a token audience `fab api` doesn't expose). If the imported Eventhouse doesn't carry the
-  Queryset-created tables/view, re-running `ColdChainKQLDB.kql` stays a manual step — see
+- **Eventhouse KQL schema on import**: resolved — `fab` genuinely has no command for this (its
+  `-A/--audience` flag only offers 4 fixed token scopes, none of which speak Kusto's own protocol).
+  `provision_fabric_iq.py`'s `run_kql_schema()` runs `ColdChainKQLDB.kql` automatically by importing a
+  throwaway notebook that executes it server-side (via `fab job run` + Kusto's `.execute database script`
+  command over `requests`, using `notebookutils.credentials.getToken("kusto")` for auth) and deleting the
+  notebook afterward — confirmed live end-to-end against a real tenant, including a fully
+  `--non-interactive` run with zero extra sign-ins (an earlier version called the azure-kusto-data SDK
+  directly from the laptop, which needed its own separate device-code sign-in; running from a notebook
+  instead reuses the existing `fab auth login` session). This also required rewriting Lab 02 Part E
+  (Module 02), since `FreezerTelemetryEnriched` now already exists by the time attendees get there — see
   `artifacts/Eventhouse/HOW-TO-EXPORT.md`.
 - **`fab job run --timeout` crashes client-side** in fab 0.1.10 (`'<' not supported between instances of
   'int' and 'str'`) even though the job itself starts fine server-side (confirmed by polling

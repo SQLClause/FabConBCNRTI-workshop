@@ -55,9 +55,31 @@ tenant-verified definition into this folder before the event.
    ```
 
    Run this from the repo root so `-o` resolves to this folder.
-7. Confirm the exported files landed under
+
+   > **Note:** `fab export` was confirmed live to fail with a generic
+   > `"UnexpectedError"` against a bare, just-created Eventstream on this
+   > CLI version — untested against a fully wired-up one like this. If it
+   > fails for you too, hand-edit the checked-in `eventstream.json` instead
+   > of trying to regenerate it from scratch (its structure is plain JSON
+   > and already documented by step 7 below).
+7. **Replace the hardcoded destination IDs with placeholders** before
+   committing — this is required regardless of whether step 6 worked, and is
+   the actual reason this file previously didn't work for any attendee but
+   the presenter who built it. In the exported (or hand-edited)
+   `eventstream.json`, under `destinations[0].properties`:
+   - `workspaceId` → literal string `__WORKSPACE_ID__`
+   - `itemId` → literal string `__KQLDATABASE_ID__` — **must be the KQL
+     database's own item ID, not the Eventhouse container's**; confirmed
+     live that passing the Eventhouse's ID instead fails with `"Unable to
+     extract cluster URL from the Eventhouse KQL database item ID ..."`
+
+   `setup/provision_fabric_iq.py`'s `create_eventstream_item()` substitutes
+   real IDs into these placeholders at import time (`item.parent_kql_database`
+   in `manifest.yaml` names which KQLDatabase item to resolve), the same
+   pattern the Notebook uses for `__LAKEHOUSE_ID__`/`__WORKSPACE_ID__`.
+8. Confirm the exported files landed under
    `artifacts/Eventstream/FreezerTelemetryEventstream.Eventstream/`.
-8. Commit the exported folder to git.
+9. Commit the exported folder to git.
 
 ## Important: the connection string is per-workspace, not exported
 
