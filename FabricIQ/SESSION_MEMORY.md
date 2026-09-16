@@ -176,6 +176,18 @@ These are called out inline in the relevant files too, but collected here for vi
   instead reuses the existing `fab auth login` session). This also required rewriting Lab 02 Part E
   (Module 02), since `FreezerTelemetryEnriched` now already exists by the time attendees get there — see
   `artifacts/Eventhouse/HOW-TO-EXPORT.md`.
+- **Real bug, since fixed: `ifnotexists` is not valid Kusto syntax.** An idempotency pass had changed
+  `.create table X (...)` to the invalid `.create table X ifnotexists (...)`; with
+  `ContinueOnErrors=false` the syntax error on the first statement silently aborted the *entire* schema
+  script on every run. Stayed hidden all session because the first live validation ran against a database
+  already seeded by an even earlier manual test (pre-dating the bug) — every subsequent "confirmed live"
+  run was actually failing but kept finding that leftover state and reporting false-positive success. A
+  user's genuinely fresh workspace (no manual seeding) is what exposed it. Fixed with the correct verb,
+  `.create-merge table`, in `artifacts/Eventhouse/ColdChainKQLDB.kql`, and re-verified against a database
+  with zero prior state (real row counts, materialized view `Status: Active`). See `setup/README.md`'s
+  maintainer notes for the full account — worth reading before touching this script again, since it's the
+  reason "confirmed live" claims in this repo's history aren't automatically trustworthy without knowing
+  what state the test database was in.
 - **`fab job run --timeout` crashes client-side** in fab 0.1.10 (`'<' not supported between instances of
   'int' and 'str'`) even though the job itself starts fine server-side (confirmed by polling
   `fab job run-status` separately). Doesn't affect `provision_fabric_iq.py` (which never calls `job run`),

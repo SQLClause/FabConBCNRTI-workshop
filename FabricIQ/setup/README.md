@@ -95,12 +95,17 @@ workspace and provision the five items.
 | `--non-interactive` | Never prompt. **Requires** `--capacity`. Intended for presenter testing/CI, not for attendees. |
 | `--capacity <name>` | Exact capacity name to use, skipping the interactive picker. |
 | `--workspace-name <name>` | Name of the workspace to create/reuse (default: `Fabric IQ`). |
-| `--force` | Reuse an existing workspace without prompting, override the trial-capacity warning, and force-overwrite items on import. Use with care. |
+| `--force` | Reuse an existing workspace without prompting, and override the trial-capacity warning. Use with care. |
 | `--skip-kql-schema` | Don't run `ColdChainKQLDB.kql` against the KQL database. Use this if it's already been applied, or you're re-testing an earlier step and don't need it re-run. |
 
 Every step is designed to be safe to re-run: creating an already-existing
-workspace is handled by reuse (not a crash), and re-importing an item that
-already exists is handled via `fab import ... -f` when `--force` is passed.
+workspace is handled by reuse (not a crash), and every `fab import` call
+always passes `-f` (re-importing an existing item overwrites it), regardless
+of whether `--force` is passed -- confirmed live that a plain `fab import`
+without `-f`, even for a brand-new item, can hang indefinitely in an
+interactive terminal or fail with a generic `"UnexpectedError"` under
+`--output_format json`. `--force` itself now only controls workspace-reuse
+prompting and the trial-capacity override.
 
 ## Missing or broken tools
 
@@ -267,14 +272,40 @@ check there first for the underlying fix.
   cache keeps serving the already-imported old version, not the upgraded one
   on disk) — so the notebook calls Kusto's REST endpoint directly via
   `requests` instead (`KQL_RUNNER_NOTEBOOK_TEMPLATE` in
-  `provision_fabric_iq.py`). Confirmed live end-to-end, including a fully
-  `--non-interactive` run: creates `FreezerTelemetryRaw` (with its
+  `provision_fabric_iq.py`). Creates `FreezerTelemetryRaw` (with its
   docstring), seeded `StoresDim`/`FreezersDim`, and the
   `FreezerTelemetryEnriched` materialized view, then deletes the throwaway
-  notebook. Every `.create` statement in the script is idempotent-safe
-  (`ifnotexists` / `create-or-alter`) so re-running is harmless — confirmed
-  live on a second run. Skip with `--skip-kql-schema`. See
+  notebook. Skip with `--skip-kql-schema`. See
   `artifacts/Eventhouse/HOW-TO-EXPORT.md` for the full writeup, including
   the note on how this changed Module 02's Lab 02 Part E (attendees now
   explain/confirm the view rather than creating it, since it already exists
   by the time they get there).
+- **`ifnotexists` is not valid Kusto syntax — a real bug that shipped and
+  was masked by stale test state**: an earlier idempotency pass changed
+  `.create table X (...)` to `.create table X ifnotexists (...)`, intending
+  the same "create if missing" semantics `fab mkdir`/etc. use elsewhere in
+  this script. Kusto has no such modifier keyword — the correct idempotent
+  verb is `.create-merge table X (...)`. This silently broke
+  `run_kql_schema()` completely: with `ContinueOnErrors=false`, the syntax
+  error on the very first `.create table` statement aborted the whole
+  script, so **nothing** got created, ever, on any run with this bug present
+  — not just a missed idempotency edge case. It stayed hidden because the
+  very first live validation of the notebook-execution approach ran against
+  a database that had already been seeded by an even earlier manual test
+  (using the *original*, pre-bug script, via a direct `azure-kusto-data` SDK
+  call) — every subsequent "confirmed live" run after that point was
+  actually failing silently, but kept finding those leftover
+  tables/materialized view already present and reporting false-positive
+  success. A genuinely fresh workspace (no prior manual seeding) is what
+  exposed it — caught by re-running against one and capturing the actual
+  `.execute database script` response body (each statement's individual
+  `Result`/`Reason`, not just the overall HTTP status), which showed
+  `"Result": "Failed", "Reason": "... Syntax error: SYN0002 ..."` on
+  `FreezerTelemetryRaw`. Fixed in `ColdChainKQLDB.kql`
+  (`.create-merge table` for `FreezerTelemetryRaw`/`StoresDim`/
+  `FreezersDim`) and re-verified against a database with zero prior state:
+  `.show tables`, `.show materialized-views`, and real row counts
+  (`StoresDim`: 6, `FreezersDim`: 15, view `Status: Active`,
+  `IsHealthy: true`) all independently confirmed correct. Lesson for future
+  changes to this script: verify against a **freshly deleted/recreated**
+  database, not one that's accumulated state across a long testing session.

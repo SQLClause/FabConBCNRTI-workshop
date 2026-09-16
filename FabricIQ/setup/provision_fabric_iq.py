@@ -704,6 +704,17 @@ def create_notebook_item(
     `dependencies.lakehouse` metadata block Fabric itself writes when you
     attach a Lakehouse via the portal), removing the manual "Add data items"
     step entirely.
+
+    The `fab import` call here always passes `-f`, independent of this
+    script's own `--force` flag -- confirmed live (reproduced directly) that
+    a plain `fab import` of this notebook, even for a brand-new item name
+    that doesn't already exist, hangs indefinitely in an interactive
+    terminal and fails with a generic, unhelpful `"UnexpectedError"` under
+    `--output_format json` -- the same class of confirmation-prompt issue
+    already worked around with `-f` in create_kql_database_item() and
+    create_eventstream_item(), just missed here originally since it's only
+    reproducible without `--force` (Lab 00's documented command has no
+    flags at all).
     """
     target = f"{workspace_path}/{item.name}.{item.type}"
     source_path = artifact_root / item.source_py
@@ -729,9 +740,7 @@ def create_notebook_item(
     tmp_dir = Path(tempfile.mkdtemp(prefix="fabric-iq-notebook-"))
     try:
         (tmp_dir / "notebook-content.py").write_text(content, encoding="utf-8")
-        cmd = ["import", target, "-i", str(tmp_dir), "--format", ".py"]
-        if force:
-            cmd.append("-f")
+        cmd = ["import", target, "-i", str(tmp_dir), "--format", ".py", "-f"]
         result = fab(cmd, dry_run=dry_run)
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
@@ -983,9 +992,12 @@ def import_items(
             continue
 
         target = f"{workspace_path}/{item.name}.{item.type}"
-        cmd = ["import", target, "-i", str(source_path)]
-        if force:
-            cmd.append("-f")
+        # Always -f, independent of this script's own --force flag -- see
+        # create_notebook_item()'s docstring for why: a plain `fab import`
+        # (even for a brand-new item) can hang or fail with a generic
+        # "UnexpectedError", confirmed live for every other `fab import`
+        # call site in this file.
+        cmd = ["import", target, "-i", str(source_path), "-f"]
         result = fab(cmd, dry_run=dry_run)
         if dry_run:
             results.append((item, True, "dry-run"))
@@ -1163,12 +1175,6 @@ def print_summary(
         )
 
     print(f"\nNext step: {LAB00_PATH}")
-    print(
-        "Reminder -- this script does NOT create the Ontology, Data Agent, or Operations Agent "
-        "items, and does NOT run the 00_LoadReferenceData notebook for you (it DOES run the KQL "
-        "schema script above). Both remaining steps are explicit, hands-on lab steps -- see the "
-        "lab guides under modules/."
-    )
     print("=" * 70)
 
 
@@ -1212,7 +1218,7 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser.add_argument(
         "--force",
         action="store_true",
-        help="Reuse an existing workspace without prompting, override the trial-capacity warning, and force-overwrite items on import.",
+        help="Reuse an existing workspace without prompting, and override the trial-capacity warning. (Item imports always overwrite -- see setup/README.md.)",
     )
     parser.add_argument(
         "--skip-kql-schema",

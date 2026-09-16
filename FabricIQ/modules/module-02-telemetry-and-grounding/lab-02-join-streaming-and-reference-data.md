@@ -124,10 +124,12 @@ module — watch for trailing spaces or partial copies when circulating. -->
 10. **Switch** back to `FreezerTelemetryEventstream` in the Fabric portal and **click** **Live view** (or
     **refresh** it if you're already there).
 
-11. **Click** the custom endpoint source node and **check** the **Data preview** tab.
+11. **Click** the FreezerTelemetryEventstream node and **check** the **Data preview** tab.
 
     > ✅ Expected result: the data preview shows a live stream of JSON events with `FreezerId`, `StoreId`,
     > `Timestamp`, `TemperatureC`, and `DoorOpen` fields, refreshing every few seconds.
+
+    ![Step 100](../../assets/screenshots/lab-02/step-100.png)
 
     <details>
     <summary>Troubleshooting — no events showing up</summary>
