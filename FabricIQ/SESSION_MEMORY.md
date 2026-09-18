@@ -240,6 +240,13 @@ These are called out inline in the relevant files too, but collected here for vi
   fixed in the source labs themselves, so both this repo and the published one get the correction.
   Verified with a real `rsync` dry run against the actual `modules/` tree before pushing, not just by
   reading the pattern.
+- **OS-differing commands now use explicit paired blocks, not inline `# Windows: ...` comments.** The
+  earlier `python3 script.py          # Windows: python script.py` single-line style (added when fixing
+  the python3-vs-python bug) is easy to miss or copy the wrong half of. Every such command across Lab 00,
+  Lab 02, `setup/README.md`, and `PREREQUISITES.md` is now a fully separate, bold-labeled
+  **macOS/Linux:**/**Windows (PowerShell):** block pair (or, for brief troubleshooting-note asides, an
+  inline `(**Windows:** ...)` parenthetical) — each block is complete and ready to paste with no
+  substitution needed, and the bold OS labels are easy to Ctrl+F for.
 - **Module 03's exact click-paths** (ontology UI) were grounded against live Microsoft Learn docs at
   authoring time but not a live tenant walkthrough — this is the single highest-risk lab in the section
   (preview UI). See `docs/risk-fallback-plan.md`.
