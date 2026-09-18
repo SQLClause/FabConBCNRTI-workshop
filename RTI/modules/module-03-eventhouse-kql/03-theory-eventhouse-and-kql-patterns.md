@@ -27,7 +27,7 @@ view), not an in-place overwrite.
 | Block | What it does | Today |
 |---|---|---|
 | **Table** | Append-only columns | `StopsDim`, `LinesDim` (loaded from CSV), `BusArrivalsEnriched` (target) |
-| **Function** | Named, parameter-less query you can call like a table | `EnrichBusArrivals()` : `BusArrivalsRaw` + `lookup` to the dimensions |
+| **Function** | Named, parameter-less query you can call like a table | `EnrichBusArrivals()` : `BusArrivalsRaw` → `mv-expand` → `lookup` to the dimensions |
 | **Update policy** | "When a batch lands in *source*, run *function* and append the result to *target*". Runs per ingestion batch, at ingestion time. | `BusArrivalsRaw` → `EnrichBusArrivals()` → `BusArrivalsEnriched` |
 | **Materialized view** | A `summarize` over a table, kept up to date in the background. Query it like a table; it returns the materialized part plus a fresh delta. | `BusNextArrivalLatest = arg_max(PolledAtUtc, *) by StopCode, LineCode` |
 
@@ -65,17 +65,27 @@ Most attendees have seen SQL; few have written KQL. Five operators cover everyth
 Data flows top to bottom through the pipes; every line narrows or reshapes what the previous one produced. Management
 commands start with a dot (`.create-merge table`, `.alter table … policy update`) and are what Lab 03 Parts C–D use.
 
-## The one KQL idea to internalise: `lookup`
+## Two KQL ideas to internalise: `mv-expand` and `lookup`
+
+The raw table holds the feed's envelopes with TMB's JSON in a `dynamic` column. Kusto reads into JSON with a dot
+path (`payload.data.ibus`, `p["t-in-min"]` when the key has hyphens) and **`mv-expand`** turns an array into one
+row per element. That's Eventstream's Expand operator, as one line:
 
 ```kql
 BusArrivalsRaw
+| mv-expand p = payload.data.ibus
+| project PolledAtUtc = fetchedAt, StopCode = tolong(key), LineCode = tostring(p.line), MinutesToArrival = tolong(p["t-in-min"])
 | lookup kind=leftouter StopsDim on StopCode
 | lookup kind=leftouter LinesDim on LineCode
 ```
 
-`lookup` is a join optimised for "big fact table, small dimension table": the dimension is broadcast, the fact
-side streams. It's what update policies and materialized views use for enrichment, and it's what turns
-`StopCode = 1497` into "Rambla de Prim – Av. Diagonal, 41.4108, 2.2180, zone Venue".
+**`lookup`** is a join optimised for "big fact table, small dimension table": the dimension is broadcast, the fact
+side streams. Flatten, then look up: it's what turns `{"key":"1497", …, "line":"H16"}` into "Rambla de Prim – Av.
+Diagonal, 41.4108, 2.2180, zone Venue, line H16 to Fòrum Campus Besòs". Put those five lines inside a function and
+attach it as an update policy, and the database does it for every batch that lands. That's Lab 03 Part C.
+
+One more for the metro payload: it nests four arrays deep (`linies → estacions → linies_trajectes → propers_trens`).
+Four `mv-expand`s in a row flatten it; the stretch part of the lab does exactly that.
 
 ## Time in this dataset
 
@@ -85,8 +95,9 @@ use `datetime_utc_to_local(PolledAtUtc, 'Europe/Madrid')` for anything a human r
 
 ## Live demo before the lab (5 minutes, instructor workspace)
 
-1. Open `TransitQueries`. Run `BusArrivalsRaw | top 5 by PolledAtUtc desc`. Then add one pipe at a time in front
-   of the room: `| where …`, `| summarize count() by bin(…)`, `| render timechart`. Three edits, three results.
+1. Open `TransitQueries`. Run `BusArrivalsRaw | top 5 by fetchedAt desc` and expand a `payload` cell. Then add one
+   pipe at a time in front of the room: `| mv-expand p = payload.data.ibus`, `| project … tostring(p.line) …`,
+   `| summarize count() by bin(…)`, `| render timechart`. Four edits, four results; the second one is the flattening.
 2. Run `EnrichBusArrivals() | take 5` on your workspace: "this function is what the update policy runs on every
    batch". Then `.show table BusArrivalsEnriched policy update` to show the policy is just JSON on the table.
 3. Run `BusNextArrivalLatest | where Zone == "Venue"`: "one row per stop and line, always current; that's the

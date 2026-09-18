@@ -27,10 +27,10 @@ BusNextArrivalLatest
 | where MinutesToArrival > 12
 | summarize StopsWaiting = dcount(StopCode)
 
-// T5 - [metro] Table: next trains at El Maresme | Fòrum
-MetroArrivalsRaw
-| where EventType == "MetroArrival"
-| summarize arg_max(PolledAtUtc, *) by StationCode, LineCode, Direction
+// T5 - [metro] Table: next trains at El Maresme | Fòrum (needs MetroArrivalsFlat() from Lab 03 Part F)
+MetroArrivalsFlat()
+| where Rank == 1
+| summarize arg_max(PolledAtUtc, *) by StationCode, RouteId
 | lookup kind=leftouter MetroStationsDim on StationCode
 | where StationName has "Maresme"
 | project Line = LineCode, Direction, Minutes = round(SecondsToArrival / 60.0, 1)

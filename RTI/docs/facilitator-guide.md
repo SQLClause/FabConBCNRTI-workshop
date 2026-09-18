@@ -10,9 +10,13 @@ Presenter-only notes. Not part of the attendee handout.
   presenter's Azure Function and Event Hubs.
 - **Shared feed, private consumer groups, two hubs per feed.** Every attendee reads the same feed; consumer
   groups isolate their eventstreams from each other (two eventstreams on one consumer group fight over
-  partitions). A hub allows 100 consumer groups, so for 120 people the Function publishes each event to
-  `tmb-ibus-a` and `tmb-ibus-b` (and the metro pair) and the seat sheet assigns half the room to each letter.
-  Hand out the seat sheet at the start of Module 02, not before; people lose paper.
+  partitions). A hub allows 100 consumer groups, so for 120 people the Function publishes each envelope to
+  `tmb-ibus-1-65` and `tmb-ibus-66-130` (and the metro pair); users 1–65 have consumer groups `user-001`…`user-065`
+  on the first pair, users 66–130 have `user-066`…`user-130` on the second. Hand out the seat sheet at the start
+  of Module 02, not before; people lose paper.
+- **The feed is raw on purpose.** The Function publishes TMB's JSON unchanged inside an envelope. Flattening it,
+  in Eventstream (Lab 02, Expand) and in KQL (Lab 03, `mv-expand`), is a learning objective, not a chore. Don't
+  "help" by pre-flattening it in the Function.
 - **Teach → show → do.** Each theory file ends with a "Live demo before the lab" script on the instructor
   workspace. With 120 people the demo is what keeps the helpers from drowning; don't skip it to buy lab time.
 - **Theory lives in `XX-theory-*.md`, delivered live.** Same convention as the IQ half. Slides are not built
@@ -23,12 +27,14 @@ Presenter-only notes. Not part of the attendee handout.
 
 ## Before the day
 
-- [ ] Run [`../infra/create-eventhubs.sh`](../infra/create-eventhubs.sh) with `--attendees 120` (10 spare groups
-      are added; two hubs per feed result). Print the seat sheet; project the namespace and listen key.
+- [ ] Run `RTIBCN/setup_event_hubs.sh` (namespace, four hubs, 130 consumer groups, Function role), then
+      [`../infra/prepare-room.sh`](../infra/prepare-room.sh) (listen-only key, seat sheet). Print the seat sheet;
+      project the namespace and listen key.
 - [ ] Run [`../infra/resolve_stops.py`](../infra/resolve_stops.py) once, review `artifacts/SampleData/stops.csv`
       and `metro_stations.csv`, commit them, and set the Function's `TMB_IBUS_STOPS` / `TMB_METRO_STATIONS` from them.
-- [ ] Apply [`../infra/function-changes/`](../infra/function-changes/README.md) to `RTIBCN/` so the Function publishes
-      flat per-prediction events (the labs' field names), and pin `flatten_metro()` to a real iTransit response.
+- [ ] During the dry run, confirm the Eventstream field picker shows `payload → data → ibus` (Lab 02 step 17) and
+      that the Get data wizard lands `payload` as `dynamic` (step 13). Both are the steps most likely to look
+      different in a newer portal build.
 - [ ] Dry run **every lab** against a fresh workspace within 72 hours of the event. Record 60+ minutes of
       live events to JSONL for the replay fallback.
 - [ ] Confirm whether the Microsoft-provided accounts have Teams. If not, say so in Module 05's theory so nobody
@@ -57,14 +63,17 @@ See [`risk-fallback-plan.md`](risk-fallback-plan.md). Short version:
 
 - **No events in data preview for the whole room** → your feed is down. Start `replay_events.py` from the
   presenter laptop; attendees change nothing.
-- **No events for one attendee** → wrong consumer group, wrong hub letter, or wrong key. 90% of cases are a
-  trailing space in the shared access key, the other hub letter (their consumer group only exists on their own
-  hub), or someone typing `$Default` (which works for exactly one person per hub and then kicks others off).
+- **No events for one attendee** → wrong consumer group, wrong hub name, or wrong key. 90% of cases are a
+  trailing space in the shared access key, the other user range's hub (their consumer group only exists on their
+  own hubs), or someone typing `$Default` (which works for exactly one person per hub and then kicks others off).
+- **Manage fields can't see inside `payload`** → the stream had no schema yet when the pane opened. Refresh the
+  data preview on the stream node first, then re-open the operator.
 - **Eventhouse table not filling although the eventstream shows data** → they published before configuring
   the destination table, or picked *Event processing before ingestion* and left "Activate ingestion" unchecked.
   Live view → destination node → check status.
-- **Activator rule never fires** → check the rule is grouped by `LineCode` (not `StopCode`), the property filter
-  is `Rank == 1`, and that the rule is *started*. Then use **Send me a test alert**, which works off history.
+- **Activator rule never fires** → check the rule is grouped by `LineCode` (not `StopCode`), the field is the
+  `MIN_MinutesToArrival` column of the `ForumNextBus` stream, and that the rule is *started*. Then use **Send me
+  a test alert**, which works off history.
 - **OneLake event doesn't trigger the notebook** → the event filter on `subject` is case-sensitive and the
   folder path must match `Files/reference/` exactly; also the alert must be *started*.
 

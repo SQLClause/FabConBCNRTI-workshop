@@ -12,11 +12,12 @@
 
 1. **Workspace & hub** (Module 01): `RTI Transit`, `TransitEventhouse`, `TransitLakehouse`; a tour of Real-Time hub.
 2. **Ingest & shape** (Module 02): `BusArrivalsEventstream` reading the shared TMB feed through *your* consumer
-   group; raw → `BusArrivalsRaw` (direct), filtered + 1-minute tumbling aggregate → `BusWaitByStopMinute`
-   (processed), venue-only derived stream `ForumArrivals`; a second stream created from the hub for metro.
-3. **Store, enrich, summarise** (Module 03): reference CSVs as `StopsDim`/`LinesDim`; an **update policy**
-   (`EnrichBusArrivals()` → `BusArrivalsEnriched`); a **materialized view** (`BusNextArrivalLatest`); saved
-   analysis queries.
+   group; raw envelopes → `BusArrivalsRaw` (direct); **flattened** with Manage fields + Expand, then a 1-minute
+   tumbling aggregate → `BusWaitByStopMinute` (processed); venue-only next-bus derived stream `ForumNextBus`; a
+   second stream created from the hub for metro.
+3. **Store, flatten again, enrich, summarise** (Module 03): reference CSVs as `StopsDim`/`LinesDim`; an **update
+   policy** (`EnrichBusArrivals()`: `mv-expand` + `lookup` + `Rank` → `BusArrivalsEnriched`); a **materialized
+   view** (`BusNextArrivalLatest`); saved analysis queries; the four-level metro flatten as a stretch.
 4. **See** (Module 04): `TransitOpsDashboard` with a map of wait times, a parameter-driven time chart, a venue
    table, live refresh.
 5. **Act** (Module 05): `TransitAlerts` with a sustained per-line threshold rule and a heartbeat rule.
@@ -33,7 +34,7 @@ and a live-refreshing dashboard keep consuming it. Do these now:
 
 1. **Open** `BusArrivalsEventstream` (Live view). **Click** the Event Hubs source node **TMBBusArrivals** and
    **Pause** it (if the option is on the destination nodes instead, **Pause** each destination:
-   `BusArrivalsRaw`, `BusWaitByStopMinute`, `ForumArrivals`, `TransitAlertsDest`). **Repeat** for
+   `BusArrivalsRaw`, `BusWaitByStopMinute`, `ForumNextBus`, `TransitAlertsDest`). **Repeat** for
    `MetroArrivalsEventstream`.
    > ✅ Expected result: the nodes show a paused state; **Data insights** stops climbing.
 2. **Open** `BusArrivalsEventstream` → alert icon on `TransitAlertsDest` → **Rules** pane → **toggle off** every

@@ -8,12 +8,13 @@ everything taught here.
 ## Scenario
 
 Everything in this section runs on one connecting narrative: **live Barcelona transit around the venue**.
-An Azure Function (presenter-hosted) polls Transports Metropolitans de Barcelona (TMB) for real-time bus
-arrival predictions (iBus) and metro arrivals at a curated set of stops and stations around the CCIB and the
-city's main interchanges, and publishes one event per prediction to Azure Event Hubs. Attendees ingest that
-stream with Eventstream, land and enrich it in an Eventhouse, visualize it on a Real-Time Dashboard, detect
-conditions with Activator, and then broaden the picture to *non-telemetry* events (OneLake, Fabric job and
-workspace events) to see the same event-driven pattern applied to data-platform automation.
+An Azure Function (presenter-hosted, in [`../RTIBCN/`](../RTIBCN/README.md)) polls Transports Metropolitans de
+Barcelona (TMB) for real-time bus arrival predictions (iBus) and metro arrivals at a curated set of stops and
+stations around the CCIB and the city's main interchanges, and publishes **each raw API response as an envelope**
+to Azure Event Hubs. Attendees ingest that stream with Eventstream, **flatten the nested JSON** into per-bus
+events (Expand in Eventstream, `mv-expand` in KQL), enrich it in an Eventhouse, visualize it on a Real-Time
+Dashboard, detect conditions with Activator, and then broaden the picture to *non-telemetry* events (OneLake,
+Fabric job and workspace events) to see the same event-driven pattern applied to data-platform automation.
 
 The scenario is deliberately different from the afternoon's retail cold-chain scenario. Attendees learn the
 RTI building blocks on transit data in the morning; in the afternoon they see the same blocks re-used
@@ -28,7 +29,7 @@ See [`docs/alignment-with-fabric-iq.md`](docs/alignment-with-fabric-iq.md) for t
 | `docs/` | Agenda, facilitator guide, risk/fallback plan, the data-feed contract for the Azure Function, and the alignment check against `FabricIQ/`. |
 | `modules/` | Theory + hands-on lab content, one pair per module, in delivery order. Same template as `FabricIQ/docs/lab-guide-template.md`. |
 | `artifacts/` | KQL scripts, reference CSVs, notebook code, dashboard tile queries, and sample event payloads that the labs paste from. |
-| `infra/` | Presenter-only: Event Hubs provisioning script, TMB stop-code resolver, and a replay script for the no-live-data fallback. |
+| `infra/` | Presenter-only: room preparation script (listen key + seat sheet; the namespace itself comes from `RTIBCN/setup_event_hubs.sh`), TMB stop-code resolver, and a replay script for the no-live-data fallback. |
 | `assets/` | Screenshot placeholders (`assets/screenshots/lab-XX/step-NN.png`), same convention as the Fabric IQ half. |
 
 ## Fixed naming contract
@@ -37,19 +38,21 @@ Used consistently across every lab, script and doc in this folder. Keep future e
 
 - Fabric workspace: **`RTI Transit`** (distinct from the afternoon's `Fabric IQ` workspace, which is provisioned separately by `FabricIQ/setup/provision_fabric_iq.py`)
 - Eventhouse: **`TransitEventhouse`**, with its auto-created default KQL database (also named `TransitEventhouse`)
-  - Raw tables: `BusArrivalsRaw`, `MetroArrivalsRaw`
+  - Raw envelope tables (`source`, `key`, `fetchedAt`, `payload:dynamic`): `BusArrivalsRaw`, `MetroArrivalsRaw`
   - Dimension tables: `StopsDim`, `LinesDim`, `MetroStationsDim`
-  - Update-policy target: `BusArrivalsEnriched` (function `EnrichBusArrivals()`)
-  - Materialized view: `BusNextArrivalLatest` (`arg_max(PolledAtUtc, *)` by `StopCode`, `LineCode`)
-  - Aggregated table fed by Eventstream: `BusWaitByStopMinute`
-- Eventstreams: **`BusArrivalsEventstream`** (Azure Event Hubs source `tmb-ibus-a` or `-b`), **`MetroArrivalsEventstream`** (Azure Event Hubs source `tmb-metro-a` or `-b`); the letter comes from the attendee's seat sheet
-  - Derived stream: `ForumArrivals` (filtered to the venue-zone stops)
+  - Update-policy target: `BusArrivalsEnriched` (function `EnrichBusArrivals()`: `mv-expand` + `lookup` + `Rank`)
+  - Metro flattening function: `MetroArrivalsFlat()`
+  - Materialized view: `BusNextArrivalLatest` (`arg_max(PolledAtUtc, *)` by `StopCode`, `LineCode`, `Rank == 1`)
+  - Aggregated table fed by Eventstream: `BusWaitByStopMinute` (`MIN_/AVG_/COUNT_MinutesToArrival` per stop/line/minute)
+- Eventstreams: **`BusArrivalsEventstream`** (Azure Event Hubs source `tmb-ibus-1-65` or `tmb-ibus-66-130`), **`MetroArrivalsEventstream`** (source `tmb-metro-1-65` or `tmb-metro-66-130`); the user range comes from the attendee's seat sheet
+  - Operators: `PickPredictions` (Manage fields) → `OnePerBus` (Expand) → `ShapeBusArrivals` (Manage fields) → `WaitByStopMinute` (Group by) / `VenueStopOnly` (Filter) → `NextBusByLine` (Group by)
+  - Derived stream: `ForumNextBus` (next bus per line at the venue stop, per minute)
 - Lakehouse: **`TransitLakehouse`** (folder `Files/reference/`, table `Stops`)
 - KQL Queryset: **`TransitQueries`**
 - Real-Time Dashboard: **`TransitOpsDashboard`**
 - Activator items: **`TransitAlerts`** (rules on the live stream), **`TransitAutomation`** (rules on OneLake events)
 - Notebook: **`LoadStopsReference`**
-- Azure side (presenter): Azure Function in [`../RTIBCN/`](../RTIBCN/README.md) publishing flat per-prediction events to every hub of a feed; Event Hubs namespace `<prefix>-fabcon-ehns` (Premium), event hubs `tmb-ibus-a`, `tmb-ibus-b`, `tmb-metro-a`, `tmb-metro-b` (100 consumer groups per hub; 120 attendees + spare → two hubs per feed), listen-only SAS policy `attendee-listen`, consumer groups `attendee-001` … `attendee-130`
+- Azure side (presenter): Azure Function in [`../RTIBCN/`](../RTIBCN/README.md) publishing raw envelopes to both hubs of a feed; Event Hubs namespace `evhns-rtibcn-premium-1976` (Premium), event hubs `tmb-ibus-1-65`, `tmb-ibus-66-130`, `tmb-metro-1-65`, `tmb-metro-66-130` (100 consumer groups per hub; 120 attendees + spare → two hubs per feed), listen-only SAS policy `attendee-listen`, consumer groups `user-001` … `user-130`
 - Alert thresholds used everywhere: **long wait = next bus > 12 minutes sustained 3 minutes**; **silent stop = no events for 10 minutes**
 
 ## Quick start (attendees)

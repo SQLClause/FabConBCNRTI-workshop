@@ -1,0 +1,16 @@
+{
+  "source": "tmb.ibus",
+  "key": "1497",
+  "fetchedAt": "2026-09-30T07:15:02.123456+00:00",
+  "payload": {
+    "status": "success",
+    "data": {
+      "ibus": [
+        {"line": "H16", "routeId": "1601", "destination": "Forum Campus Besos", "t-in-min": 4, "t-in-s": 230, "text-ca": "4 min"},
+        {"line": "7", "routeId": "701", "destination": "Zona Universitaria", "t-in-min": 11, "t-in-s": 655, "text-ca": "11 min"},
+        {"line": "H16", "routeId": "1601", "destination": "Forum Campus Besos", "t-in-min": 13, "t-in-s": 790, "text-ca": "13 min"},
+        {"line": "7", "routeId": "701", "destination": "Zona Universitaria", "t-in-min": 0, "t-in-s": 20, "text-ca": "imminent"}
+      ]
+    }
+  }
+}

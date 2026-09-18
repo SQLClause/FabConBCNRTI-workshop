@@ -41,12 +41,14 @@ Most of you got here by metro L4 to El Maresme | Fòrum, or on bus H16 or 7. All
 TMB arrival predictions** for the stops around this building and the city's main interchanges: which bus is
 next, in how many minutes, at which stop, and how that changes minute by minute.
 
-A presenter-hosted Azure Function polls TMB's iBus and metro APIs every 30–60 seconds and publishes one event per
-prediction to Azure Event Hubs. You each connect your own Eventstream to that feed. By 13:00 you will have:
+A presenter-hosted Azure Function polls TMB's iBus and metro APIs every 30–60 seconds and publishes each raw
+response, as it came off the wire, to Azure Event Hubs. You each connect your own Eventstream to that feed. By
+13:00 you will have:
 
-1. A stream of raw arrival events flowing into your own Eventhouse (Module 02).
-2. Those events enriched with stop names, coordinates and line details, plus a "latest prediction per stop and
-   line" view you authored yourself (Module 03).
+1. The raw API responses flowing into your own Eventhouse, and a flattened, per-bus version of the same stream
+   built with no-code operators (Module 02).
+2. Those events flattened again inside the database, enriched with stop names, coordinates and line details, plus
+   a "latest prediction per stop and line" view you authored yourself (Module 03).
 3. A live dashboard with a map of wait times across the city (Module 04).
 4. An alert that fires when your bus home from the Fòrum is running late, and another that fires when a stop
    goes silent (Module 05).
@@ -58,10 +60,10 @@ style facts into business entities an AI agent can reason over. Same building bl
 ## Four values to write down (given at the start of Module 02)
 
 - The Event Hubs **namespace name**
-- **Your hub letter**: `tmb-ibus-a`/`tmb-metro-a` or `tmb-ibus-b`/`tmb-metro-b` (the feed is duplicated into two
-  hubs because a hub allows 100 consumer groups and there are 120 of us)
+- **Your two hub names**: `tmb-ibus-1-65` + `tmb-metro-1-65`, or `tmb-ibus-66-130` + `tmb-metro-66-130` (the feed
+  is duplicated into two hubs because a hub allows 100 consumer groups and there are 120 of us)
 - The listen-only **shared access key** (name + value)
-- **Your** consumer group, `attendee-NNN`. Every attendee has a different one; do not use `$Default`.
+- **Your** consumer group, `user-NNN`. Every attendee has a different one; do not use `$Default`.
 
 ## How every module works
 

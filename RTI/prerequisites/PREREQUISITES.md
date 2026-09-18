@@ -33,17 +33,16 @@ needs a tenant-admin action beyond what that checklist already covers.
 
 ## 3. Presenter-owned infrastructure (must be running before the session)
 
-- [ ] Azure Function polling TMB and publishing to Event Hubs per
+- [ ] Azure Function (`RTIBCN/`) polling TMB and publishing raw envelopes to Event Hubs per
       [`../docs/data-feed-contract.md`](../docs/data-feed-contract.md), scheduled to run from ~07:30 to ~14:00
       local time on the day (plus the dry run).
-- [ ] Event Hubs namespace (Premium) with `tmb-ibus-a/-b` and `tmb-metro-a/-b`, listen-only SAS policy, and one
-      consumer group per attendee (130 for 120 attendees + spare). See [`../infra/README.md`](../infra/README.md).
-      The Function must publish **flat per-prediction events to both hubs of each feed** (see
-      `infra/function-changes/`), not the raw TMB envelope to one hub.
-- [ ] A printed seat sheet (`infra/out/consumer-groups.csv`) and a projected slide with the namespace name and
-      the listen-only key name + key. Each attendee needs their row: consumer group and hub letter.
-- [ ] Two helpers for a room of 120, briefed on the two most common fixes (consumer group / hub letter in Lab 02,
-      the `Rank == 1` filter in Lab 05).
+- [ ] Event Hubs namespace (Premium) with `tmb-ibus-1-65`, `tmb-ibus-66-130`, `tmb-metro-1-65`, `tmb-metro-66-130`
+      and consumer groups `user-001`…`user-130` (`RTIBCN/setup_event_hubs.sh`), plus the listen-only SAS policy
+      and seat sheet from [`../infra/prepare-room.sh`](../infra/prepare-room.sh).
+- [ ] A printed seat sheet (`infra/out/seat-sheet.csv`) and a projected slide with the namespace name and the
+      listen-only key name + key. Each attendee needs their row: consumer group and the two hub names.
+- [ ] Two helpers for a room of 120, briefed on the two most common fixes (consumer group / hub name in Lab 02,
+      the nested field picker in Lab 02 step 17).
 - [ ] TMB developer account with an application registered (app_id/app_key) and its **plan rate limits
       confirmed** against the polling schedule in the data-feed contract.
 - [ ] A recorded JSONL sample of at least 60 minutes of real events (from the dry run) for
