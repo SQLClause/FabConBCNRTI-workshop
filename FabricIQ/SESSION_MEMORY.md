@@ -192,6 +192,13 @@ These are called out inline in the relevant files too, but collected here for vi
   'int' and 'str'`) even though the job itself starts fine server-side (confirmed by polling
   `fab job run-status` separately). Doesn't affect `provision_fabric_iq.py` (which never calls `job run`),
   but worth knowing if you manually run the notebook from a terminal.
+- **Windows console encoding — real attendee bug, fixed.** A tester reported `UnicodeDecodeError`/
+  `UnicodeEncodeError` on Windows, root-caused to Python defaulting to the legacy console code page (not
+  UTF-8) for both subprocess output and `sys.stdout`/`sys.stderr`, unless `PYTHONUTF8=1` is set — which
+  `fab`'s own UTF-8 output doesn't respect. Fixed so attendees don't need to set that variable: all
+  `subprocess.run(..., text=True)` calls now pass `encoding="utf-8", errors="replace"` explicitly, and
+  both `provision_fabric_iq.py` and `check_environment.py` reconfigure stdout/stderr to UTF-8 at the top
+  of `main()`. See `setup/README.md`'s maintainer notes.
 - **Module 03's exact click-paths** (ontology UI) were grounded against live Microsoft Learn docs at
   authoring time but not a live tenant walkthrough — this is the single highest-risk lab in the section
   (preview UI). See `docs/risk-fallback-plan.md`.
