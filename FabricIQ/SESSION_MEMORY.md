@@ -228,6 +228,18 @@ These are called out inline in the relevant files too, but collected here for vi
   previously hardcoded to `python3`, which is simply wrong inside a Windows-only PowerShell script) are
   now OS-aware too. Added one authoritative callout explaining the pattern to `PREREQUISITES.md` §4 so
   future doc additions don't need to rediscover this.
+- **`publish-attendee-labs.yml` no longer ships theory files.** `modules/` has two file kinds per module:
+  `lab-*.md` (attendee-facing, hands-on) and `theory-*.md`/`00-theory-kickoff-and-scenario.md`
+  (presenter-only — theory is delivered live, not as a doc attendees read). The publish workflow's
+  `safe_rsync` for `modules/` copied the whole directory with no filtering; added `--exclude="*theory*"`
+  (one broad pattern to catch both naming conventions, module 00's differently-ordered name included,
+  rather than two exact patterns that could miss a future naming drift). `06-wrapup-and-resources.md`
+  deliberately stays published — it's attendee-facing content, just not literally a "lab." Also fixed 5
+  "Continue to Module N" end-of-lab links that pointed at the *next* module's theory file (which would
+  have 404'd for real attendees the moment this shipped) to point at that module's lab file instead —
+  fixed in the source labs themselves, so both this repo and the published one get the correction.
+  Verified with a real `rsync` dry run against the actual `modules/` tree before pushing, not just by
+  reading the pattern.
 - **Module 03's exact click-paths** (ontology UI) were grounded against live Microsoft Learn docs at
   authoring time but not a live tenant walkthrough — this is the single highest-risk lab in the section
   (preview UI). See `docs/risk-fallback-plan.md`.
