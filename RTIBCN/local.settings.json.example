@@ -1,0 +1,21 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "FUNCTIONS_WORKER_RUNTIME": "python",
+    "TMB_APP_ID": "<your-app-id>",
+    "TMB_APP_KEY": "<your-app-key>",
+    "TMB_API_BASE": "https://api.tmb.cat/v1",
+    "TMB_IBUS_STOPS": "1265,1266,1267",
+    "TMB_IBUS_PATH_TEMPLATE": "ibus/stops/{stop}",
+    "TMB_METRO_STATIONS": "120,122,321",
+    "TMB_METRO_PATH": "itransit/metro/estacions",
+    "TMB_MAX_CONCURRENCY": "5",
+    "TMB_TIMEOUT_SECONDS": "10",
+    "IBUS_SCHEDULE": "0 */1 * * * *",
+    "METRO_SCHEDULE": "0 */5 * * * *",
+    "EVENT_HUB_CONNECTION__fullyQualifiedNamespace": "<namespace>.servicebus.windows.net",
+    "EVENT_HUB_NAME_IBUS": "tmb-ibus",
+    "EVENT_HUB_NAME_METRO": "tmb-metro"
+  }
+}
