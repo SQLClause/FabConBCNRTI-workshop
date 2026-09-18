@@ -217,6 +217,17 @@ These are called out inline in the relevant files too, but collected here for vi
   9 ("Run all") before the Lakehouse/Tables check, and fixed the "four items"/"five items" mismatch in the
   same pass (Step 8 was still listing four items from before this session's Eventhouse/KQL split added
   `ColdChainKQLDB` as its own separately-listed item).
+- **`python3` doesn't exist on most Windows installs — real attendee bug, fixed.** Reported: the generator
+  script failed with `python3 ...` but worked with `python ...`. Root cause: python.org/winget installers
+  provide `python`/`py`, not `python3` (a macOS/Linux convention) — confirmed by the tester that this
+  holds even inside an activated venv, which doesn't get its own `python3.exe` on Windows either. Every
+  labs's literal copy-paste `python3 <script>` code block (Lab 00 steps 1/3/4, Lab 02's generator step and
+  its "before you begin" check) now shows the Windows `python` equivalent inline, matching the
+  `source .venv/bin/activate # macOS/Linux — Windows: ...` convention already used for venv activation.
+  `check_environment.py`'s own printed "what to run next" hint and `run-setup.ps1`'s warning text (both
+  previously hardcoded to `python3`, which is simply wrong inside a Windows-only PowerShell script) are
+  now OS-aware too. Added one authoritative callout explaining the pattern to `PREREQUISITES.md` §4 so
+  future doc additions don't need to rediscover this.
 - **Module 03's exact click-paths** (ontology UI) were grounded against live Microsoft Learn docs at
   authoring time but not a live tenant walkthrough — this is the single highest-risk lab in the section
   (preview UI). See `docs/risk-fallback-plan.md`.
