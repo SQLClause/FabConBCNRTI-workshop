@@ -207,6 +207,16 @@ These are called out inline in the relevant files too, but collected here for vi
   that's the floor now, both in `requirements.txt` and via an explicit version check in
   `check_fab_installed()` (parses `fab --version`, not just checks that it responds). See
   `setup/README.md`'s maintainer notes.
+- **Lab 00: the notebook-run step was real but effectively invisible — fixed.** Reported as "the Lakehouse
+  doesn't have the tables provisioned." `provision_fabric_iq.py` deliberately only imports
+  `00_LoadReferenceData`, never runs it (a considered pedagogical choice, reconfirmed when asked directly
+  — kept intentionally manual, unlike the KQL schema). But Lab 00's steps never had an explicit "run the
+  notebook" instruction; it only existed as a troubleshooting fallback under a step that itself claimed
+  the tables would already be listed — a state that's impossible, since the notebook's `saveAsTable()`
+  calls are what create the tables at all, not just populate them. Added a real, numbered, required step
+  9 ("Run all") before the Lakehouse/Tables check, and fixed the "four items"/"five items" mismatch in the
+  same pass (Step 8 was still listing four items from before this session's Eventhouse/KQL split added
+  `ColdChainKQLDB` as its own separately-listed item).
 - **Module 03's exact click-paths** (ontology UI) were grounded against live Microsoft Learn docs at
   authoring time but not a live tenant walkthrough — this is the single highest-risk lab in the section
   (preview UI). See `docs/risk-fallback-plan.md`.
