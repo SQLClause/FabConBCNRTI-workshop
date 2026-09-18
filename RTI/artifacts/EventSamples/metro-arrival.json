@@ -1,0 +1,16 @@
+{
+  "EventType": "MetroArrival",
+  "PolledAtUtc": "2026-09-17T21:30:01Z",
+  "StationCode": 321,
+  "LineCode": "L3",
+  "RouteId": "0031",
+  "Direction": "Trinitat Nova",
+  "DirectionId": 1,
+  "Track": 1,
+  "ServiceId": "303",
+  "Rank": 1,
+  "PredictedArrivalUtc": "2026-09-17T21:31:50Z",
+  "SecondsToArrival": 108,
+  "IsStale": false,
+  "Source": "TMB metro"
+}

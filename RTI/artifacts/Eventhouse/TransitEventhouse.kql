@@ -1,0 +1,301 @@
+// =============================================================================
+// TransitEventhouse.kql
+//
+// Every KQL statement Lab 03 has attendees paste, in order, plus the analysis
+// queries. Run section by section in a KQL Queryset attached to
+// TransitEventhouse > TransitEventhouse (the default database). Every
+// management command uses an idempotent form (.create-merge / .create-or-alter)
+// so re-running a section is safe.
+//
+// Tables that already exist by the time you run this (created by Lab 02's
+// Eventstream destinations):
+//   BusArrivalsRaw        - one row per prediction (direct ingestion)
+//   BusWaitByStopMinute   - 1-minute tumbling aggregate (processed ingestion)
+//   MetroArrivalsRaw      - [metro] one row per metro prediction
+//
+// Tables loaded from CSV in Lab 03 Part B via Get data > Local file:
+//   StopsDim             - artifacts/SampleData/stops.csv
+//   LinesDim             - artifacts/SampleData/lines.csv
+//   MetroStationsDim     - artifacts/SampleData/metro_stations.csv  [metro]
+// =============================================================================
+
+
+// -----------------------------------------------------------------------------
+// PART A. Explore the raw stream
+// -----------------------------------------------------------------------------
+
+// A1. Latest 20 predictions
+BusArrivalsRaw
+| top 20 by PolledAtUtc desc
+
+// A2. How fast is data arriving? Rows per minute over the last 15 minutes
+BusArrivalsRaw
+| where PolledAtUtc > ago(15m)
+| summarize Events = count() by bin(PolledAtUtc, 1m)
+| render timechart
+
+// A3. Which lines and stops are we seeing? (codes only -- no names yet)
+BusArrivalsRaw
+| where PolledAtUtc > ago(15m)
+| summarize Predictions = count(), Stops = dcount(StopCode) by LineCode
+| order by Predictions desc
+
+// A4. Local time, and the predicted arrival instant
+BusArrivalsRaw
+| where PolledAtUtc > ago(5m) and Rank == 1
+| extend PolledAtLocal = datetime_utc_to_local(PolledAtUtc, 'Europe/Madrid'),
+         PredictedArrivalUtc = PolledAtUtc + SecondsToArrival * 1s
+| project PolledAtLocal, StopCode, LineCode, Destination, MinutesToArrival, PredictedArrivalUtc
+| top 20 by PolledAtLocal desc
+
+
+// -----------------------------------------------------------------------------
+// PART B. Reference data -- loaded through the portal, verified here
+// -----------------------------------------------------------------------------
+// Get data > Local file > stops.csv  -> new table StopsDim  (First row is column header ON)
+// Get data > Local file > lines.csv  -> new table LinesDim
+// Set StopCode to long in "Edit columns" if it was inferred as string.
+
+// B1. Verify
+StopsDim | take 20
+LinesDim | take 20
+
+// B2. Type check -- both sides of the join must be long
+StopsDim | getschema | where ColumnName == "StopCode"
+BusArrivalsRaw | getschema | where ColumnName == "StopCode"
+
+// B3. If StopsDim.StopCode landed as string, fix it with a typed copy:
+// .set-or-replace StopsDim <| StopsDim | extend StopCode = tolong(StopCode)
+
+// B4. First enriched look, ad hoc (this is the query the update policy will run)
+BusArrivalsRaw
+| where PolledAtUtc > ago(5m) and Rank == 1
+| lookup kind=leftouter StopsDim on StopCode
+| lookup kind=leftouter LinesDim on LineCode
+| project PolledAtUtc, StopName, Zone, LineCode, LineName, Destination, MinutesToArrival, Lat, Lon
+| top 20 by PolledAtUtc desc
+
+
+// -----------------------------------------------------------------------------
+// PART C. Update policy: BusArrivalsRaw --> BusArrivalsEnriched
+// -----------------------------------------------------------------------------
+
+// C1. Target table. Column set = raw columns + dimension columns we want.
+.create-merge table BusArrivalsEnriched (
+    PolledAtUtc         : datetime,
+    PredictedArrivalUtc : datetime,
+    StopCode            : long,
+    StopName            : string,
+    Zone                : string,
+    Lat                 : real,
+    Lon                 : real,
+    LineCode            : string,
+    LineName            : string,
+    LineOrigin          : string,
+    LineDestination     : string,
+    RouteId             : string,
+    Destination         : string,
+    Rank                : long,
+    MinutesToArrival    : long,
+    SecondsToArrival    : long,
+    IsStale             : bool
+)
+
+// C2. The enrichment function. Parameter-less; its schema must match the target.
+.create-or-alter function with (docstring = "Enrich raw TMB bus predictions with stop and line reference data. Used by the update policy on BusArrivalsRaw.", folder = "Enrichment")
+EnrichBusArrivals() {
+    BusArrivalsRaw
+    | where EventType == "BusArrival"
+    | extend PredictedArrivalUtc = PolledAtUtc + SecondsToArrival * 1s
+    | lookup kind=leftouter (StopsDim | project StopCode, StopName, Zone, Lat, Lon) on StopCode
+    | lookup kind=leftouter (LinesDim | project LineCode, LineName, LineOrigin, LineDestination) on LineCode
+    | project PolledAtUtc, PredictedArrivalUtc, StopCode, StopName, Zone, Lat, Lon,
+              LineCode, LineName, LineOrigin, LineDestination, RouteId, Destination,
+              Rank, MinutesToArrival, SecondsToArrival, IsStale
+}
+
+// C3. Attach the policy. From now on every batch landing in BusArrivalsRaw is
+//     enriched and appended to BusArrivalsEnriched at ingestion time.
+.alter table BusArrivalsEnriched policy update
+@'[{ "IsEnabled": true, "Source": "BusArrivalsRaw", "Query": "EnrichBusArrivals()", "IsTransactional": false, "PropagateIngestionProperties": false }]'
+
+// C4. One-time backfill of what arrived before the policy existed (small data, fine to do inline)
+.set-or-append BusArrivalsEnriched <| EnrichBusArrivals()
+
+// C5. Verify: new rows keep appearing on their own within a minute or two
+BusArrivalsEnriched
+| top 20 by PolledAtUtc desc
+
+// C6. Inspect the policy and any failures
+.show table BusArrivalsEnriched policy update
+.show ingestion failures | where Table == "BusArrivalsEnriched" | top 10 by FailedOn desc
+
+
+// -----------------------------------------------------------------------------
+// PART D. Materialized view: latest prediction per stop and line
+// -----------------------------------------------------------------------------
+// arg_max(PolledAtUtc, *) keeps, per (StopCode, LineCode), the whole row with
+// the newest PolledAtUtc. Query the view like a table: it returns the
+// materialized part plus the not-yet-materialized delta, so it's always current.
+.create-or-alter materialized-view with (
+        backfill = true,
+        docString = "Newest prediction per stop and line, with stop/line context. Query this for 'what is the wait right now' -- dashboards, alerts, the interchange query."
+    )
+    BusNextArrivalLatest on table BusArrivalsEnriched
+{
+    BusArrivalsEnriched
+    | where Rank == 1
+    | summarize arg_max(PolledAtUtc, *) by StopCode, LineCode
+}
+
+// D1. Verify
+BusNextArrivalLatest
+| project PolledAtUtc, StopName, Zone, LineCode, Destination, MinutesToArrival
+| order by MinutesToArrival desc
+
+// D2. "Right now at the venue"
+BusNextArrivalLatest
+| where Zone == "Venue"
+| project StopName, LineCode, LineName, Destination, MinutesToArrival, AgeSeconds = toint((now() - PolledAtUtc) / 1s)
+| order by MinutesToArrival asc
+
+// D3. View health
+.show materialized-view BusNextArrivalLatest
+.show materialized-view BusNextArrivalLatest details
+
+
+// -----------------------------------------------------------------------------
+// PART E. Analysis queries (save these in the TransitQueries queryset;
+//         Module 04 turns them into dashboard tiles)
+// -----------------------------------------------------------------------------
+
+// E1. Average wait per line over time, 5-minute bins, last 2 hours
+BusArrivalsEnriched
+| where PolledAtUtc > ago(2h) and Rank == 1
+| summarize AvgWaitMin = avg(MinutesToArrival) by bin(PolledAtUtc, 5m), LineCode
+| render timechart
+
+// E2. The processed table from the eventstream tells the same story with 1/60th of the rows
+BusWaitByStopMinute
+| where Window_End_Time > ago(2h)
+| summarize AvgWaitMin = avg(AVG_MinutesToArrival) by bin(Window_End_Time, 5m), LineCode
+| render timechart
+// (column names follow the Group-by operator's convention: AVG_<field>, MIN_<field>, COUNT_<field>, Window_End_Time;
+//  check with:  BusWaitByStopMinute | getschema )
+
+// E2b. Same table, by line family (H/V/D orthogonal network vs trunk lines) -- LineFamily was computed in the
+//      eventstream's Manage fields operator with Left(LineCode, 1)
+BusWaitByStopMinute
+| where Window_End_Time > ago(2h)
+| extend Family = case(LineFamily in ("H", "V", "D"), strcat("Orthogonal ", LineFamily), "Trunk")
+| summarize AvgWaitMin = avg(AVG_MinutesToArrival) by bin(Window_End_Time, 5m), Family
+| render timechart
+
+// E3. Bus bunching: when the gap between the next bus and the one after is under 2 minutes
+BusArrivalsEnriched
+| where PolledAtUtc > ago(30m)
+| summarize Next = minif(MinutesToArrival, Rank == 1), Following = minif(MinutesToArrival, Rank == 2)
+          by PolledAtUtc, StopCode, StopName, LineCode
+| where isnotnull(Following)
+| extend GapMin = Following - Next
+| where GapMin <= 2
+| summarize BunchedObservations = count(), LastSeen = max(PolledAtUtc) by StopName, LineCode
+| order by BunchedObservations desc
+
+// E4. Stops with the longest current wait (feeds the map tile: needs Lat/Lon)
+BusNextArrivalLatest
+| where isnotnull(Lat) and isnotnull(Lon)
+| summarize LongestWaitMin = max(MinutesToArrival), Lines = make_set(LineCode) by StopCode, StopName, Zone, Lat, Lon
+| order by LongestWaitMin desc
+
+// E5. Data freshness per stop (Module 05's heartbeat rule, as a query)
+BusArrivalsEnriched
+| summarize LastSeen = max(PolledAtUtc) by StopCode, StopName
+| extend SilentForMin = toint((now() - LastSeen) / 1m)
+| order by SilentForMin desc
+
+// E6. Stale-cache share (how often the Function re-published a cached value)
+BusArrivalsRaw
+| where PolledAtUtc > ago(1h)
+| summarize StalePct = round(100.0 * countif(IsStale) / count(), 1) by bin(PolledAtUtc, 10m)
+| render columnchart
+
+
+// -----------------------------------------------------------------------------
+// PART F (stretch). Metro + bus at the venue interchange, and OneLake availability
+// -----------------------------------------------------------------------------
+
+// F1. [metro] Latest metro prediction per station/line/direction
+MetroArrivalsRaw
+| where EventType == "MetroArrival"
+| summarize arg_max(PolledAtUtc, *) by StationCode, LineCode, Direction
+| lookup kind=leftouter MetroStationsDim on StationCode
+| project StationName, LineCode, Direction, MinutesToTrain = round(SecondsToArrival / 60.0, 1), PolledAtUtc
+| order by StationName asc, LineCode asc
+
+// F2. [metro] The interchange question: at the Fòrum right now, bus or metro first?
+let bus = BusNextArrivalLatest
+    | where Zone == "Venue"
+    | project Mode = "Bus", Service = strcat(LineCode, " → ", Destination), WaitMin = todouble(MinutesToArrival), PolledAtUtc;
+let metro = MetroArrivalsRaw
+    | where EventType == "MetroArrival"
+    | summarize arg_max(PolledAtUtc, *) by StationCode, LineCode, Direction
+    | lookup kind=leftouter MetroStationsDim on StationCode
+    | where StationName has "Maresme"
+    | project Mode = "Metro", Service = strcat(LineCode, " → ", Direction), WaitMin = round(SecondsToArrival / 60.0, 1), PolledAtUtc;
+union bus, metro
+| order by WaitMin asc
+
+// F2b. [metro] Metro headway per station and direction over the last hour (gap between rank 1 and rank 2)
+MetroArrivalsRaw
+| where PolledAtUtc > ago(1h) and EventType == "MetroArrival"
+| summarize Next = minif(SecondsToArrival, Rank == 1), Following = minif(SecondsToArrival, Rank == 2)
+          by PolledAtUtc, StationCode, LineCode, Direction
+| where isnotnull(Following)
+| summarize AvgHeadwayMin = round(avg((Following - Next) / 60.0), 1) by StationCode, LineCode, Direction
+| lookup kind=leftouter MetroStationsDim on StationCode
+| project StationName, LineCode, Direction, AvgHeadwayMin
+| order by AvgHeadwayMin desc
+
+// F3. OneLake availability is a portal toggle (database > OneLake availability > On, or per table).
+//     Once on, BusArrivalsEnriched appears as a Delta table under the Eventhouse's OneLake path
+//     and can be shortcut into TransitLakehouse. Nothing to run here.
+
+
+// =============================================================================
+// PART C-alt (only if the Function keeps publishing the raw envelope instead
+// of flat per-prediction events -- see docs/data-feed-contract.md §6).
+// The Eventhouse destination then lands: source:string, key:string,
+// fetchedAt:datetime, payload:dynamic. This update policy flattens it into the
+// SAME BusArrivalsEnriched schema as Part C, so Parts D-F and the dashboard are
+// unchanged. Uncomment and run instead of C2/C3.
+// =============================================================================
+//
+// .create-or-alter function with (docstring = "Flatten the raw iBus envelope and enrich it.", folder = "Enrichment")
+// EnrichBusArrivals() {
+//     BusArrivalsRaw
+//     | where source == "tmb.ibus"
+//     | extend PolledAtUtc = fetchedAt, StopCode = tolong(key)
+//     | mv-expand p = payload.data.ibus
+//     | extend LineCode = tostring(p.line),
+//              RouteId = tostring(p.routeId),
+//              Destination = tostring(p.destination),
+//              MinutesToArrival = tolong(p["t-in-min"]),
+//              SecondsToArrival = tolong(p["t-in-s"])
+//     | where isnotempty(LineCode)
+//     // row_number needs the input sorted so the partition reset below works:
+//     | order by PolledAtUtc asc, StopCode asc, LineCode asc, SecondsToArrival asc
+//     | extend Rank = row_number(1, prev(PolledAtUtc) != PolledAtUtc or prev(StopCode) != StopCode or prev(LineCode) != LineCode)
+//     | extend PredictedArrivalUtc = PolledAtUtc + SecondsToArrival * 1s, IsStale = false
+//     | lookup kind=leftouter (StopsDim | project StopCode, StopName, Zone, Lat, Lon) on StopCode
+//     | lookup kind=leftouter (LinesDim | project LineCode, LineName, LineOrigin, LineDestination) on LineCode
+//     | project PolledAtUtc, PredictedArrivalUtc, StopCode, StopName, Zone, Lat, Lon,
+//               LineCode, LineName, LineOrigin, LineDestination, RouteId, Destination,
+//               Rank, MinutesToArrival, SecondsToArrival, IsStale
+// }
+//
+// .alter table BusArrivalsEnriched policy update
+// @'[{ "IsEnabled": true, "Source": "BusArrivalsRaw", "Query": "EnrichBusArrivals()", "IsTransactional": false, "PropagateIngestionProperties": false }]'
+//
+// Note: an update policy runs per ingestion batch; a batch is one Function poll cycle, so the
+// serialized row_number() partitioning above sees every prediction of a stop/line together.
