@@ -5,6 +5,14 @@ from unittest.mock import patch
 import function_app
 
 
+class OutputRecorder:
+    def __init__(self) -> None:
+        self.value = None
+
+    def set(self, value) -> None:
+        self.value = value
+
+
 class MetroRequestTests(unittest.TestCase):
     @patch.dict(os.environ, {"TMB_METRO_STATIONS": "120, 122,321"}, clear=False)
     def test_metro_request_uses_live_arrivals_endpoint(self) -> None:
@@ -20,6 +28,18 @@ class MetroRequestTests(unittest.TestCase):
     @patch.dict(os.environ, {"TMB_METRO_STATIONS": ""}, clear=False)
     def test_metro_request_requires_station_codes(self) -> None:
         self.assertIsNone(function_app._metro_request())
+
+
+class EventHubFanOutTests(unittest.TestCase):
+    def test_sets_identical_events_on_both_outputs(self) -> None:
+        first = OutputRecorder()
+        second = OutputRecorder()
+        messages = ["first", "second"]
+
+        function_app._set_dual_outputs(first, second, messages)
+
+        self.assertEqual(first.value, messages)
+        self.assertEqual(second.value, messages)
 
 
 if __name__ == "__main__":

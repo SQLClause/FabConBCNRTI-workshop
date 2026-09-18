@@ -1,8 +1,8 @@
 """Poll TMB real-time APIs and publish the responses to Azure Event Hubs.
 
 Two timer-triggered functions:
-  * poll_ibus  - real-time bus arrivals for configured stops
-  * poll_metro - real-time train arrivals for configured metro stations
+    * poll_ibus  - bus arrivals fanned out to two workshop Event Hubs
+    * poll_metro - train arrivals fanned out to two workshop Event Hubs
 """
 
 import json
@@ -61,14 +61,30 @@ def _envelope(source: str, key: str, payload: Dict[str, Any]) -> str:
     )
 
 
+def _set_dual_outputs(
+    first: func.Out[List[str]], second: func.Out[List[str]], messages: List[str]
+) -> None:
+    first.set(messages)
+    second.set(messages)
+
+
 @app.function_name(name="poll_ibus")
 @app.timer_trigger(schedule="%IBUS_SCHEDULE%", arg_name="timer", run_on_startup=False)
 @app.event_hub_output(
-    arg_name="events",
-    event_hub_name="%EVENT_HUB_NAME_IBUS%",
+    arg_name="events_1_65",
+    event_hub_name="%EVENT_HUB_NAME_IBUS_1_65%",
     connection="EVENT_HUB_CONNECTION",
 )
-async def poll_ibus(timer: func.TimerRequest, events: func.Out[List[str]]) -> None:
+@app.event_hub_output(
+    arg_name="events_66_130",
+    event_hub_name="%EVENT_HUB_NAME_IBUS_66_130%",
+    connection="EVENT_HUB_CONNECTION",
+)
+async def poll_ibus(
+    timer: func.TimerRequest,
+    events_1_65: func.Out[List[str]],
+    events_66_130: func.Out[List[str]],
+) -> None:
     stops = _csv_setting("TMB_IBUS_STOPS")
     if not stops:
         logging.warning("TMB_IBUS_STOPS is empty; nothing to poll.")
@@ -84,18 +100,28 @@ async def poll_ibus(timer: func.TimerRequest, events: func.Out[List[str]]) -> No
         logging.error("iBus poll returned no successful responses for %d stops.", len(stops))
         return
 
-    events.set([_envelope("tmb.ibus", stop, payload) for stop, payload in results])
+    messages = [_envelope("tmb.ibus", stop, payload) for stop, payload in results]
+    _set_dual_outputs(events_1_65, events_66_130, messages)
     logging.info("Published iBus arrivals for %d/%d stops.", len(results), len(stops))
 
 
 @app.function_name(name="poll_metro")
 @app.timer_trigger(schedule="%METRO_SCHEDULE%", arg_name="timer", run_on_startup=False)
 @app.event_hub_output(
-    arg_name="events",
-    event_hub_name="%EVENT_HUB_NAME_METRO%",
+    arg_name="events_1_65",
+    event_hub_name="%EVENT_HUB_NAME_METRO_1_65%",
     connection="EVENT_HUB_CONNECTION",
 )
-async def poll_metro(timer: func.TimerRequest, events: func.Out[List[str]]) -> None:
+@app.event_hub_output(
+    arg_name="events_66_130",
+    event_hub_name="%EVENT_HUB_NAME_METRO_66_130%",
+    connection="EVENT_HUB_CONNECTION",
+)
+async def poll_metro(
+    timer: func.TimerRequest,
+    events_1_65: func.Out[List[str]],
+    events_66_130: func.Out[List[str]],
+) -> None:
     request = _metro_request()
     if request is None:
         logging.warning("TMB_METRO_STATIONS is empty; nothing to poll.")
@@ -108,5 +134,6 @@ async def poll_metro(timer: func.TimerRequest, events: func.Out[List[str]]) -> N
         logging.error("iMetro poll returned no successful response.")
         return
 
-    events.set([_envelope("tmb.imetro", key, payload) for key, payload in results])
+    messages = [_envelope("tmb.imetro", key, payload) for key, payload in results]
+    _set_dual_outputs(events_1_65, events_66_130, messages)
     logging.info("Published iMetro arrivals for stations %s.", request[0])

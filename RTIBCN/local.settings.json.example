@@ -15,7 +15,9 @@
     "IBUS_SCHEDULE": "0 */1 * * * *",
     "METRO_SCHEDULE": "0 */5 * * * *",
     "EVENT_HUB_CONNECTION__fullyQualifiedNamespace": "<namespace>.servicebus.windows.net",
-    "EVENT_HUB_NAME_IBUS": "tmb-ibus",
-    "EVENT_HUB_NAME_METRO": "tmb-metro"
+    "EVENT_HUB_NAME_IBUS_1_65": "tmb-ibus-1-65",
+    "EVENT_HUB_NAME_IBUS_66_130": "tmb-ibus-66-130",
+    "EVENT_HUB_NAME_METRO_1_65": "tmb-metro-1-65",
+    "EVENT_HUB_NAME_METRO_66_130": "tmb-metro-66-130"
   }
 }

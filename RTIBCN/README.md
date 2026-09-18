@@ -2,10 +2,15 @@
 
 Python v2 Azure Functions app that polls the TMB developer APIs and publishes live arrivals to Azure Event Hubs.
 
-| Function | Source | Destination |
-|---|---|---|
-| `poll_ibus` | `ibus/stops/{stop}` for each configured bus stop | `tmb-ibus` |
-| `poll_metro` | iMetro predictions for configured metro stations | `tmb-metro` |
+| Function | Source | Users 1-65 | Users 66-130 |
+|---|---|---|---|
+| `poll_ibus` | `ibus/stops/{stop}` for each configured bus stop | `tmb-ibus-1-65` | `tmb-ibus-66-130` |
+| `poll_metro` | iMetro predictions for configured metro stations | `tmb-metro-1-65` | `tmb-metro-66-130` |
+
+Each function copies the same events to both destination hubs. Every hub has 65 consumer groups named
+`user-001` through `user-065` or `user-066` through `user-130`. This requires an Event Hubs Premium
+namespace because Standard supports at most 20 consumer groups per hub. Azure also creates the reserved
+`$Default` consumer group, so each hub contains 65 workshop groups plus `$Default`.
 
 Events use this envelope:
 
@@ -25,8 +30,8 @@ Important settings:
 | `TMB_METRO_STATIONS` | Comma-separated metro station codes used by iMetro. |
 | `IBUS_SCHEDULE` | NCRONTAB schedule for bus polling. |
 | `METRO_SCHEDULE` | NCRONTAB schedule for metro polling. |
-| `EVENT_HUB_NAME_IBUS` | Bus Event Hub name. |
-| `EVENT_HUB_NAME_METRO` | Metro Event Hub name. |
+| `EVENT_HUB_NAME_IBUS_1_65` / `EVENT_HUB_NAME_IBUS_66_130` | Bus Event Hubs for each user range. |
+| `EVENT_HUB_NAME_METRO_1_65` / `EVENT_HUB_NAME_METRO_66_130` | Metro Event Hubs for each user range. |
 
 TMB documents iMetro predictions as based on each train's last known position and refreshed at least every 10-15 seconds.
 
@@ -51,7 +56,17 @@ python -m compileall -q function_app.py tmb_client.py tests
 
 ## Deploy
 
-Set the application settings shown in `local.settings.json.example`, assign the Function App managed identity the `Azure Event Hubs Data Sender` role on the namespace, and publish:
+Provision the Premium namespace, four hubs, consumer groups, managed-identity role, and Function settings:
+
+```bash
+./setup_event_hubs.sh
+```
+
+The script defaults to the workshop's `MVP Demo` subscription resources. Override
+`AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP`, `AZURE_LOCATION`, `EVENT_HUB_NAMESPACE`, or
+`FUNCTION_APP_NAME` when targeting another environment.
+
+Publish the Function App:
 
 ```bash
 func azure functionapp publish <function-app-name> --python --build remote
