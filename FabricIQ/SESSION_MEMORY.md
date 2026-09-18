@@ -199,6 +199,14 @@ These are called out inline in the relevant files too, but collected here for vi
   `subprocess.run(..., text=True)` calls now pass `encoding="utf-8", errors="replace"` explicitly, and
   both `provision_fabric_iq.py` and `check_environment.py` reconfigure stdout/stderr to UTF-8 at the top
   of `main()`. See `setup/README.md`'s maintainer notes.
+- **`ms-fabric-cli` minimum pinned to 1.7.0 — another real attendee bug, fixed.** `requirements.txt`'s pin
+  used to be the open-ended `ms-fabric-cli>=1.0.0`; a tester's pip resolved an older CLI that doesn't
+  support `--output_format json` for `ls`, failing confusingly at Step 3 rather than clearly at Step 1.
+  This script has only ever been tested against 1.7.0 (not just "any version with JSON output support" —
+  1.1.0+ per the CLI's release notes, but unverified for the exact response shapes this script parses), so
+  that's the floor now, both in `requirements.txt` and via an explicit version check in
+  `check_fab_installed()` (parses `fab --version`, not just checks that it responds). See
+  `setup/README.md`'s maintainer notes.
 - **Module 03's exact click-paths** (ontology UI) were grounded against live Microsoft Learn docs at
   authoring time but not a live tenant walkthrough — this is the single highest-risk lab in the section
   (preview UI). See `docs/risk-fallback-plan.md`.
