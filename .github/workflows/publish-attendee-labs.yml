@@ -78,7 +78,7 @@ jobs:
           # name) are presenter material. "*theory*" catches both naming
           # conventions -- and any future one -- rather than two exact
           # patterns that could miss a naming drift like module 00's.
-          safe_rsync "$SRC/modules" "$DEST/modules" --exclude="*theory*"
+          safe_rsync "$SRC/modules" "$DEST/modules"
           safe_rsync "$SRC/artifacts" "$DEST/artifacts" --exclude="HOW-TO-EXPORT.md"
           safe_rsync "$SRC/prerequisites" "$DEST/prerequisites"
           safe_rsync "$SRC/assets/screenshots" "$DEST/assets/screenshots" --exclude="fallback/"
