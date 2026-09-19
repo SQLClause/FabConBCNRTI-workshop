@@ -11,20 +11,9 @@ needs a tenant-admin action beyond what that checklist already covers.
       Fabric IQ half installs Git and Python live in its Module 00; if you want to get ahead, follow
       [`../../FabricIQ/prerequisites/PREREQUISITES.md`](../../FabricIQ/prerequisites/PREREQUISITES.md) §4 during the lunch break.
 - [ ] Your Microsoft-provided sign-in for this event.
-- [ ] Optional: the Microsoft Teams app signed in with the same account, if the event accounts have Teams
-      licences (the facilitator confirms this on the day). Every Activator lab step offers **email** as the
-      default action so Teams is never required.
 
 ## 2. Confirm with Microsoft ahead of time (presenter action, 2+ weeks lead time)
 
-- [ ] Each attendee has **Contributor or higher on a workspace they can create**, on a Fabric capacity
-      (F2 or higher, or trial). All RTI items used here (Eventstream, Eventhouse, Activator, Real-Time
-      Dashboard, Lakehouse, Notebook, Data pipeline) work on trial and F2 capacities. Only the *afternoon's*
-      Ontology/Data Agent items need a non-trial capacity, so the same F2+ capacity the IQ half requires is
-      fine for both halves.
-- [ ] Tenant settings: **Users can create Fabric items** (on), **Fabric Activator** (on), **Real-Time Hub**
-      visible, **OneLake events** / **Fabric events** allowed (these are on by default in most tenants but a
-      locked-down event tenant may have them off).
 - [ ] Capacity headroom: each attendee runs two Eventstreams, one Eventhouse, one Activator and one Real-Time
       Dashboard with live refresh for ~3 hours, on the **same** per-attendee capacity the afternoon needs for
       Ontology + Data Agent. Module 07's "park your workspace" step pauses the streams before lunch precisely
@@ -48,12 +37,3 @@ needs a tenant-admin action beyond what that checklist already covers.
 - [ ] A recorded JSONL sample of at least 60 minutes of real events (from the dry run) for
       [`../infra/replay_events.py`](../infra/replay_events.py), so the labs run identically if TMB or the Function
       is unavailable on the day.
-
-## 4. Network caveat
-
-Attendees only talk to `app.fabric.microsoft.com`. Event Hubs traffic is cloud-to-cloud (Fabric ↔ Azure), so venue
-network restrictions don't affect ingestion. If the venue blocks Teams, use the email action in Module 05.
-
-## Support contact
-
-Questions on any of the above: contact Johan ahead of the event.
