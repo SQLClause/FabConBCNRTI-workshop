@@ -20,7 +20,7 @@ from tmb_client import TmbClient
 app = func.FunctionApp()
 
 DEFAULT_API_BASE = "https://api.tmb.cat/v1"
-DEFAULT_IBUS_PATH_TEMPLATE = "ibus/stops/{stop}"
+DEFAULT_IBUS_PATH_TEMPLATE = "itransit/bus/parades/{stop}"
 DEFAULT_METRO_PATH = "itransit/metro/estacions"
 
 
@@ -46,6 +46,12 @@ def _metro_request() -> Optional[Tuple[str, str, Dict[str, str]]]:
     station_key = ",".join(stations)
     path = os.environ.get("TMB_METRO_PATH", DEFAULT_METRO_PATH)
     return station_key, path, {"estacions": station_key}
+
+
+def _ibus_requests() -> List[Tuple[str, str, None]]:
+    stops = _csv_setting("TMB_IBUS_STOPS")
+    template = os.environ.get("TMB_IBUS_PATH_TEMPLATE", DEFAULT_IBUS_PATH_TEMPLATE)
+    return [(stop, template.format(stop=stop), None) for stop in stops]
 
 
 def _envelope(source: str, key: str, payload: Dict[str, Any]) -> str:
@@ -85,24 +91,21 @@ async def poll_ibus(
     events_1_65: func.Out[List[str]],
     events_66_130: func.Out[List[str]],
 ) -> None:
-    stops = _csv_setting("TMB_IBUS_STOPS")
-    if not stops:
+    requests = _ibus_requests()
+    if not requests:
         logging.warning("TMB_IBUS_STOPS is empty; nothing to poll.")
         return
-
-    template = os.environ.get("TMB_IBUS_PATH_TEMPLATE", DEFAULT_IBUS_PATH_TEMPLATE)
-    requests = [(stop, template.format(stop=stop), None) for stop in stops]
 
     async with _client() as client:
         results = await client.gather(requests)
 
     if not results:
-        logging.error("iBus poll returned no successful responses for %d stops.", len(stops))
+        logging.error("iBus poll returned no successful responses for %d stops.", len(requests))
         return
 
     messages = [_envelope("tmb.ibus", stop, payload) for stop, payload in results]
     _set_dual_outputs(events_1_65, events_66_130, messages)
-    logging.info("Published iBus arrivals for %d/%d stops.", len(results), len(stops))
+    logging.info("Published iBus arrivals for %d/%d stops.", len(results), len(requests))
 
 
 @app.function_name(name="poll_metro")

@@ -30,6 +30,18 @@ class MetroRequestTests(unittest.TestCase):
         self.assertIsNone(function_app._metro_request())
 
 
+class BusRequestTests(unittest.TestCase):
+    @patch.dict(os.environ, {"TMB_IBUS_STOPS": "108, 1265"}, clear=False)
+    def test_bus_requests_use_current_realtime_endpoint(self) -> None:
+        self.assertEqual(
+            function_app._ibus_requests(),
+            [
+                ("108", "itransit/bus/parades/108", None),
+                ("1265", "itransit/bus/parades/1265", None),
+            ],
+        )
+
+
 class EventHubFanOutTests(unittest.TestCase):
     def test_sets_identical_events_on_both_outputs(self) -> None:
         first = OutputRecorder()

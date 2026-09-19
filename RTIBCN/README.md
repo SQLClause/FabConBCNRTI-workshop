@@ -4,7 +4,7 @@ Python v2 Azure Functions app that polls the TMB developer APIs and publishes li
 
 | Function | Source | Users 1-65 | Users 66-130 |
 |---|---|---|---|
-| `poll_ibus` | `ibus/stops/{stop}` for each configured bus stop | `tmb-ibus-1-65` | `tmb-ibus-66-130` |
+| `poll_ibus` | `itransit/bus/parades/{stop}` for each configured bus stop | `tmb-ibus-1-65` | `tmb-ibus-66-130` |
 | `poll_metro` | iMetro predictions for configured metro stations | `tmb-metro-1-65` | `tmb-metro-66-130` |
 
 Each function copies the same events to both destination hubs. Every hub has 65 consumer groups named
@@ -32,6 +32,10 @@ Important settings:
 | `METRO_SCHEDULE` | NCRONTAB schedule for metro polling. |
 | `EVENT_HUB_NAME_IBUS_1_65` / `EVENT_HUB_NAME_IBUS_66_130` | Bus Event Hubs for each user range. |
 | `EVENT_HUB_NAME_METRO_1_65` / `EVENT_HUB_NAME_METRO_66_130` | Metro Event Hubs for each user range. |
+
+The current iBus API returns `timestamp`, `parades`, `linies_trajectes`, and `propers_busos`. A stop can
+legitimately have an empty `propers_busos` list when TMB has no active prediction, but events must never
+use the deprecated `status/data/ibus` response shape.
 
 TMB documents iMetro predictions as based on each train's last known position and refreshed at least every 10-15 seconds.
 
