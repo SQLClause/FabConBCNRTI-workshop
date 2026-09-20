@@ -2,7 +2,7 @@
 
 **Duration:** 10 minutes (Parts A–C are the work; Part D is a two-minute look around)
 **Prerequisites:** You are signed in to [app.fabric.microsoft.com](https://app.fabric.microsoft.com) with the
-Microsoft-provided account for this event, and that account can create workspaces on a Fabric capacity (see
+Microsoft-provided account for this event, and that account has access to a workspace similar to your username, on a Fabric capacity (see
 [`prerequisites/PREREQUISITES.md`](../../prerequisites/PREREQUISITES.md)).
 
 **Learning objectives**
