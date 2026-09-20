@@ -1,4 +1,4 @@
-# Lab 01: Create the Workspace and Explore Real-Time Hub
+# Lab 01: Verify access and explore Real-Time Hub
 
 **Duration:** 10 minutes (Parts A–C are the work; Part D is a two-minute look around)
 **Prerequisites:** You are signed in to [app.fabric.microsoft.com](https://app.fabric.microsoft.com) with the
@@ -6,8 +6,8 @@ Microsoft-provided account for this event, and that account can create workspace
 [`prerequisites/PREREQUISITES.md`](../../prerequisites/PREREQUISITES.md)).
 
 **Learning objectives**
-- Create the `RTI Transit` workspace on a Fabric capacity.
-- Create the two containers every later lab uses: `TransitEventhouse` and `TransitLakehouse`.
+- Verify you have access to your assigned workspace and the right permissions.
+- Create the two objects every later lab uses: `TransitEventhouse` and `TransitLakehouse`.
 - Find your way around Real-Time hub: data streams, Fabric events, and the connector gallery.
 
 ## Before you begin
@@ -19,30 +19,12 @@ Microsoft-provided account for this event, and that account can create workspace
 
 ### Part A — Create the workspace
 
-1. **Click** **Workspaces** in the left navigation, then **click** **+ New workspace**.
+1. **Click** **Workspaces** in the left navigation, then find your workspace - should be similar to **EVNT--xxx@fabconbar26.onmicrosoft.com**. Where the xxx is the same as your assigned username.
 
    ![Step 1](../../assets/screenshots/lab-01/step-01.png)
 
-2. **Type** `RTI Transit` in the **Name** field.
+3. **Expand** **Advanced**, and under **License mode** **confirm** a **Premium capacity** is assigned
 
-3. **Expand** **Advanced**, and under **License mode** **confirm** a **Fabric capacity** (or **Trial**) is
-   selected, not **Pro**. If a **Capacity** dropdown appears, **select** the capacity assigned to you.
-
-   > ✅ Expected result: the license mode shows a Fabric or Trial capacity. Every item in this workshop needs
-   > one; Pro workspaces can't hold Eventstreams or Eventhouses.
-
-   <details>
-   <summary>Troubleshooting — no Fabric or Trial option</summary>
-
-   Your account hasn't been given a capacity. This can't be fixed in the room. Flag a facilitator and pair
-   with a neighbour for now; you'll follow along on their screen and sort out access at the break.
-   </details>
-
-4. **Click** **Apply**.
-
-   > ✅ Expected result: an empty workspace named **RTI Transit** opens.
-
-   *Adapted from: [Create a workspace](https://learn.microsoft.com/fabric/fundamentals/create-workspaces)*
 
 ### Part B — Create the Eventhouse
 
@@ -103,13 +85,6 @@ Microsoft-provided account for this event, and that account can create workspace
     > ✅ Expected result: you've seen where every source connector lives. In Module 02 we use **Azure Event
     > Hubs** from inside an eventstream, and in Part D of that lab we use this same hub entry point instead, to
     > see that both roads lead to an Eventstream item.
-
-    *Adapted from: [Real-Time hub overview](https://learn.microsoft.com/fabric/real-time-hub/real-time-hub-overview)*
-
-> 🎤 Facilitator note: while people finish, hand out the consumer-group sheet and put the namespace + key on the
-> screen. Module 02 starts by typing them.
-
-<!-- facilitator: the most common failure here is the workspace ending up in Pro license mode because Advanced was collapsed. Check the workspace settings of anyone whose "+ New item" gallery lacks Eventhouse. -->
 
 ## Checkpoint
 
