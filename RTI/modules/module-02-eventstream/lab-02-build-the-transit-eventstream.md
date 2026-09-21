@@ -63,15 +63,13 @@ Confirm your environment matches this state before starting:
 6. For **Consumer group**, **type** your personal `user-NNN`. For **Data format**, **select** **JSON**.
 
    > ⚠️ Sixty-five attendees read each hub. If you type `$Default` (or someone else's group) your eventstream
-   > will compete for partitions with theirs and both of you will see gaps. If the connection fails with a
+   > will compete for partitions with theirs and the connection will throw an error. If the connection fails with a
    > "consumer group not found" style error, you've typed the other user range's hub.
 
 7. In the **Source details** pane on the right, **click** the pencil next to the source name and **type**
    `TMBBusArrivals`. **Click** **Next**, review the summary, and **click** **Add**.
 
    > ✅ Expected result: the canvas shows **TMBBusArrivals → BusArrivalsEventstream-stream**.
-
-   *Adapted from: [Add an Azure Event Hubs source to an eventstream](https://learn.microsoft.com/fabric/real-time-intelligence/event-streams/add-source-azure-event-hubs)*
 
 8. **Click** the **BusArrivalsEventstream-stream** node, then in the bottom pane **click** **Data preview** and
    **Refresh** if it's empty.
@@ -106,6 +104,8 @@ Confirm your environment matches this state before starting:
     - **Destination name**: `BusArrivalsRaw`
     - **Workspace**: `RTI Transit`
     - **Eventhouse**: `TransitEventhouse`
+    - **KQL Database**: `TransitEventhouse`
+    - **KQL Destination table**: Click 'Create new', then en `BusArrivalsRaw`
     - **Click** **Save**.
 
     > ✅ Expected result: an **Eventhouse** destination node appears, connected to the stream. If it isn't
@@ -126,7 +126,8 @@ Confirm your environment matches this state before starting:
 
     | Column | Type |
     |---|---|
-    | `source`, `key` | `string` |
+    | `source` | `string` |
+    | `key` | `long` |
     | `fetchedAt` | `datetime` |
     | `payload` | `dynamic` |
 
@@ -137,7 +138,7 @@ Confirm your environment matches this state before starting:
     > switch the JSON nesting level back to the top level) so the payload stays as one JSON column: Lab 03
     > flattens it in KQL on purpose.
 
-14. **Click** **Finish**, wait for the three green checks, then **click** **Close**.
+15. **Click** **Finish**, wait for the three green checks, then **click** **Close**.
 
     > ✅ Expected result: back in Live view the Eventhouse node reads **BusArrivalsRaw** with a green status.
 
