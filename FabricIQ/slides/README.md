@@ -99,3 +99,9 @@ layouts render distinctly — see `docs/facilitator-guide.md`'s "Slides" section
 is replaced or the conference issues an updated version, re-verify layout names and behavior before
 trusting this table — layout names must match **exactly** (case-insensitive, but spacing/punctuation
 must be identical) or MarpToPptx silently falls back to the deck-wide default layout.
+
+## Claude Slides variant
+
+`claude-slides/` holds a single-deck version of the same content built with Claude Slides instead
+of Marp — see [`claude-slides/README.md`](claude-slides/README.md). Its outputs live alongside the
+Marp decks as `dist/pdf/fabric-iq-workshop.pdf` and `dist/pptx/fabric-iq-workshop.pptx`.
