@@ -2,8 +2,8 @@
 
 **Duration:** 35 minutes
 **Prerequisites:** Module 01 complete. Your workspace contains `TransitEventhouse` (with its default KQL
-database) and `TransitLakehouse`. You have the four values from the facilitator's seat sheet: Event Hubs
-**namespace name**, **your two hub names** (`tmb-ibus-1-65` + `tmb-metro-1-65`, or `tmb-ibus-66-130` +
+database) and `TransitLakehouse`. You have the four values Event Hubs
+**namespace name** (`evhns-rtibcn-premium-1976.servicebus.windows.net`), **your two hub names** (`tmb-ibus-1-65` + `tmb-metro-1-65`, or `tmb-ibus-66-130` +
 `tmb-metro-66-130`), the **`attendee-listen`** shared access key: `hmUG6ik4kG63LStmc4uKY6EX/DoCsTQ1e+AEhAypPIg=`, and **your** consumer group `user-NNN`.
 
 **Learning objectives**
