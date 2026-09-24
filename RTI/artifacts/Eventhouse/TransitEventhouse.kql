@@ -62,10 +62,11 @@ BusArrivalsRaw
 | mv-expand stop = payload.parades
 | mv-expand route = stop.linies_trajectes
 | mv-expand bus = route.propers_busos
-| project PolledAtUtc = fetchedAt, StopCode = tolong(key), StopName = tostring(stop.nom_parada),
+| project PolledAtUtc = fetchedAt, TmbTimestamp, StopCode = tolong(key), StopName = tostring(stop.nom_parada),
           LineCode = tostring(route.nom_linia), Destination = tostring(route.desti_trajecte),
           PredictedArrivalUtc = unixtime_milliseconds_todatetime(tolong(bus.temps_arribada))
 | extend MinutesToArrival = round((PredictedArrivalUtc - TmbTimestamp) / 1m, 1)
+| project-away TmbTimestamp
 | top 20 by PolledAtUtc desc
 
 // A5. Which lines and stops are we seeing? (codes and a stop name -- but no coordinates, zone, or line details)
