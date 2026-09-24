@@ -287,7 +287,7 @@ def main():
 
     if not stops or not any(s["IsPrimary"] == "true" for s in stops):
         print("\n[warn] no primary venue stop resolved -- check the Venue landmarks' lines/radius before using stops.csv")
-    print("\nReview the CSVs, then commit them. The first row of stops.csv is <VENUE_STOP_CODE> for Labs 02/05.")
+    print("\nReview the CSVs, then commit them. Labs 02/05 assume the primary venue stop is 2689 (Diagonal Mar); update them if it changed.")
 
 
 if __name__ == "__main__":

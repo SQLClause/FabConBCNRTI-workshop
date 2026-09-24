@@ -19,23 +19,24 @@ to turn a nested API payload into flat, typed events is part of the course, so t
 3. **Spread across the city for the map tile**: the Fòrum, the Poblenou/Diagonal Mar corridor between venue and
    centre, the four interchanges everyone knows (Plaça Catalunya, Passeig de Gràcia / Diagonal, Sagrada Família,
    Sants Estació), plus Glòries and Barceloneta.
-4. **Small enough to respect TMB's API plan.** Target **≤ 16 bus stops** and **≤ 10 metro stations**. iBus
+4. **Small enough to respect TMB's API plan.** **18 bus stops** and **10 metro stations** are committed. iBus
    refreshes predictions every 20–40 s ([TMB iBus](https://www.tmb.cat/en/barcelona/tmb-ibus)); iMetro at least every
    10–15 s. Polling faster than 30 s buys nothing.
 
 ### Bus stops (`GET /v1/itransit/bus/parades/{stopCode}`; one call returns every line at that stop)
 
-TMB stop codes are only obtainable from the authenticated developer API, so this table lists *landmarks* and
-preferred lines; [`../infra/resolve_stops.py`](../infra/resolve_stops.py) turns it into exact `StopCode`s by querying
-`/v1/transit/linies/bus/{line}/parades` and picking, per landmark and line, the nearest stop in each direction. Its
-output, `artifacts/SampleData/stops.csv`, is **both** the Function's `TMB_IBUS_STOPS` list **and** the `StopsDim`
-table attendees load in Lab 03. Run it once during the dry run, commit the result, don't regenerate on the day.
+This table lists *landmarks* and preferred lines; [`../infra/build_stops_from_osm.py`](../infra/build_stops_from_osm.py)
+turns it into exact `StopCode`s from OpenStreetMap (whose `ref` tag is TMB's stop code, spot-checked against
+tmb.cat), picking per landmark the nearest stops serving the preferred lines. Its output,
+[`../artifacts/SampleData/stops.csv`](../artifacts/SampleData/stops.csv) (**committed**, 18 stops, 6 of them at the
+CCIB with **2689 Diagonal Mar** as the primary venue stop), is **both** the Function's `TMB_IBUS_STOPS` list **and**
+the `StopsDim` table attendees load in Lab 03. Don't regenerate on the day.
 
 | Zone | Landmark (approx. lat, lon) | Preferred lines | Why |
 |---|---|---|---|
-| Venue | CCIB / Rambla de Prim – Av. Diagonal (41.4108, 2.2180) | H16, 7, 136 | The stops attendees used; both directions |
-| Venue | El Maresme \| Fòrum metro entrance (41.4098, 2.2166) | H16, 7 | Second venue cluster, ties bus to metro |
-| Corridor | Diagonal Mar / Selva de Mar (41.4066, 2.2110) | 7, H16 | First stop out of the venue |
+| Venue | CCIB – Av. Diagonal / Pg. Taulat at Pl. de Llevant (41.4105, 2.2178) | H16, 7 | The stops in front of the CCIB, both directions: **2689 Diagonal Mar**, 3477, 3347, 2259 |
+| Venue | El Maresme \| Fòrum metro entrance, Rambla de Prim (41.4121, 2.2175) | 136, V31 | 1090, 1878: ties bus to the L4 station |
+| Corridor | Pg. Taulat – Diagonal Mar (41.4071, 2.2154) | H16 | 2265, first stop out of the venue |
 | Corridor | Poblenou – Rambla del Poblenou / Diagonal (41.4029, 2.2043) | 7, H16, V27 | Mid-corridor |
 | Corridor | Glòries (41.4033, 2.1868) | 7, H12, V21 | Corridor meets the L1 interchange |
 | Corridor | Vila Olímpica / Marina (41.3880, 2.1962) | V21, D20, 59 | Coastal route to the centre |
@@ -65,17 +66,18 @@ table is a wish list; **`stops.csv` is the contract**.
 | Glòries | L1 | Corridor meets L1 |
 | Sants Estació | L3, L5 | Rail interchange |
 
-The resolver writes `artifacts/SampleData/metro_stations.csv` from `/v1/transit/linies/metro/{line}/estacions`;
-its `StationCode` column (TMB's `codi_estacio`, the same codes iTransit returns, e.g. `120,122,321`) is the
-Function's `TMB_METRO_STATIONS`.
+[`../artifacts/SampleData/metro_stations.csv`](../artifacts/SampleData/metro_stations.csv) (**committed**) holds
+their TMB station codes, read from tmb.cat's metro line pages: **416 El Maresme | Fòrum (L4)** is the venue
+station. Codes are per line (`codi_estacio`: L1 = 1xx, L4 = 4xx, L5 = 5xx), so the file carries one line per
+station; `TMB_METRO_STATIONS=416,415,417,422,425,126,130,523,521,518`.
 
 ### Polling schedule and API budget
 
 | Setting | Value | Calls / hour | Notes |
 |---|---|---|---|
-| `IBUS_SCHEDULE` | `*/30 * * * * *` (every 30 s) | 16 stops × 120 = **1,920** | One iBus call per stop returns all lines |
-| `METRO_SCHEDULE` | `0 */1 * * * *` (every 60 s) | **60** | One iTransit call for all stations |
-| **Total** | | **≈ 2,000 / hour**, ≈ 13,000 for a 07:30–14:00 window | **Confirm against your TMB plan's per-second and per-day limits before the dry run.** If the daily cap is lower, use `0 */1 * * * *` for iBus (960/h). |
+| `IBUS_SCHEDULE` | `*/30 * * * * *` (every 30 s) | 18 stops × 120 = **2,160** | One iTransit call per stop returns all lines |
+| `METRO_SCHEDULE` | `0 */1 * * * *` (every 60 s) | **60** | One iTransit call for all 10 stations |
+| **Total** | | **≈ 2,220 / hour**, ≈ 14,500 for a 07:30–14:00 window | **Confirm against your TMB plan's per-second and per-day limits before the dry run.** If the daily cap is lower, use `0 */1 * * * *` for iBus (1,080/h). |
 
 Keep `TMB_MAX_CONCURRENCY` at 5 or lower so a 30-second cycle never bursts above the plan's per-second limit.
 Run the Function **only inside the workshop window** (and the dry run): disable the timers outside 07:30–14:00

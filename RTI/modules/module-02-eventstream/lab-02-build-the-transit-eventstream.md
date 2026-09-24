@@ -22,9 +22,10 @@ Confirm your environment matches this state before starting:
 - [ ] Your dedicated workspace open; `TransitEventhouse` and `TransitLakehouse` present.
 - [ ] Namespace name, your two hub names, the `attendee-listen` key, and your `user-NNN` written down.
       **Do not use `$Default`**, and don't use the other user range's hubs: your consumer group only exists on yours.
-- [ ] You know the **venue stop code** (first row of
-      [`artifacts/SampleData/stops.csv`](../../artifacts/SampleData/stops.csv), `Zone = Venue`, `IsPrimary = true`;
-      the facilitator also has it on screen). It's referred to below as `<VENUE_STOP_CODE>`.
+- [ ] You know the **venue stop**: **`2689` Diagonal Mar**, the H16 stop on Av. Diagonal in front of the CCIB
+      (first row of [`artifacts/SampleData/stops.csv`](../../artifacts/SampleData/stops.csv), `Zone = Venue`,
+      `IsPrimary = true`). The other venue stops in that file are 3477 (H16 towards the Fòrum campus), 3347 and
+      2259 (line 7 on Av. Diagonal), 1090 (136) and 1878 (V31) at the metro entrance.
 
 ## Steps
 
@@ -276,9 +277,9 @@ can't be chained with other operators in the same path, so it hangs directly off
 25. In the **Outputs** section on the left, **click** **+**, **choose** **Stream**, and **rename** the output alias
     to `ForumNextBus`.
 
-26. **Replace** the query with the following, **substituting** your venue stop code in the `WHERE` line (keep the
-    quotes; `key` is text in the envelope). The input alias is the stream's name, `[BusArrivalsEventstream-stream]`;
-    check it matches the **Inputs** entry on the left.
+26. **Replace** the query with the following. The `WHERE` line keeps only the venue stop, `2689` Diagonal Mar
+    (in quotes: `key` is text in the envelope). The input alias is the stream's name,
+    `[BusArrivalsEventstream-stream]`; check it matches the **Inputs** entry on the left.
 
     ```sql
     WITH Stops AS (
@@ -303,7 +304,7 @@ can't be chained with other operators in the same path, so it hangs directly off
            COUNT(*) AS Predictions
     INTO [ForumNextBus]
     FROM Buses
-    WHERE StopCode = '<VENUE_STOP_CODE>'
+    WHERE StopCode = '2689'
     GROUP BY StopCode, StopName, LineCode, Destination, TumblingWindow(minute, 1)
     ```
 
@@ -314,9 +315,12 @@ can't be chained with other operators in the same path, so it hangs directly off
 
 27. **Click** **Test query**.
 
-    > ✅ Expected result: after 60–90 seconds the **Test result** tab shows one row per line at your venue stop per
-    > minute, with `MinutesToArrival` as a decimal (for example `4.2`) and `Predictions` (usually `2`). If it shows
-    > an error about an unknown column, the input alias name differs from what's on the left; copy it from there.
+    > ✅ Expected result: after 60–90 seconds the **Test result** tab shows one row per minute for stop 2689 and
+    > line H16 (the only TMB day line at that stop), `StopName` "Diagonal Mar", `Destination` "Pg. Zona Franca",
+    > `MinutesToArrival` as a decimal (for example `4.2`) and `Predictions` (usually `2`). If it shows an error
+    > about an unknown column, the input alias name differs from what's on the left; copy it from there.
+    > (Want more lines in your venue stream? Change the `WHERE` to `StopCode IN ('2689', '3347', '1090')` to add
+    > line 7 and line 136 from the neighbouring stops.)
 
     *Adapted from: [Process events using a SQL operator](https://learn.microsoft.com/fabric/real-time-intelligence/event-streams/process-events-using-sql-code-editor)*
 
@@ -331,7 +335,7 @@ can't be chained with other operators in the same path, so it hangs directly off
     <summary>Troubleshooting — the SQL operator isn't offered in this tenant</summary>
 
     It's a preview feature. Fallback with no-code operators: from **ShapeBusArrivals** add a **Filter**
-    (`StopCode` equals `<VENUE_STOP_CODE>`) → **Group by** (Minimum of `ArrivalMs` by `LineCode`, `StopCode`,
+    (`StopCode` equals `2689`) → **Group by** (Minimum of `ArrivalMs` by `LineCode`, `StopCode`,
     tumbling 1 minute) → **Stream** `ForumNextBus`. The derived stream then carries `MIN_ArrivalMs` (an instant)
     instead of `MinutesToArrival`; Module 05 has a matching fallback for its rules.
     </details>

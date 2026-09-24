@@ -31,8 +31,11 @@ Presenter-only notes. Not part of the attendee handout.
 - [ ] Run `RTIBCN/setup_event_hubs.sh` (namespace, four hubs, 130 consumer groups, Function role), then
       [`../infra/prepare-room.sh`](../infra/prepare-room.sh) (listen-only key, seat sheet). Print the seat sheet;
       project the namespace and listen key.
-- [ ] Run [`../infra/resolve_stops.py`](../infra/resolve_stops.py) once, review `artifacts/SampleData/stops.csv`
-      and `metro_stations.csv`, commit them, and set the Function's `TMB_IBUS_STOPS` / `TMB_METRO_STATIONS` from them.
+- [ ] Set the Function's `TMB_IBUS_STOPS` / `TMB_METRO_STATIONS` from the committed
+      `artifacts/SampleData/stops.csv` and `metro_stations.csv` (the values are printed in
+      [`../infra/README.md`](../infra/README.md) §1). During the dry run, confirm iTransit returns predictions for
+      all 18 stops, in particular the venue stop 2689; if one stop comes back empty all morning, swap it for a
+      neighbour from the same landmark and regenerate with `infra/build_stops_from_osm.py`.
 - [ ] During the dry run, confirm: the Eventstream field picker shows `payload → parades` (Lab 02 step 17); Expand
       accepts the nested `Stops → linies_trajectes` path (step 19) or note the Manage-fields workaround; the Get
       data wizard lands `payload` as `dynamic` (step 13); and the SQL operator accepts the step 26 query with the

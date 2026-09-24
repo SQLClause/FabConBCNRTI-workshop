@@ -20,16 +20,23 @@ Why two hubs per feed: every attendee eventstream needs its own consumer group (
 over partitions), and a Premium hub allows 100. Attendees 1–65 use the `-1-65` hubs, 66–130 the `-66-130` hubs;
 their consumer group exists only on their own pair. Both halves see identical data.
 
-## 1. Resolve stop and station codes (once, before the dry run)
+## 1. Stop and station codes (done; regenerate only if the landmarks change)
+
+`artifacts/SampleData/stops.csv`, `lines.csv` and `metro_stations.csv` are **committed**. Bus stops came from
+OpenStreetMap (its `ref` tag is TMB's stop code, spot-checked against tmb.cat), metro codes from tmb.cat's line
+pages. No API key was needed. See `artifacts/SampleData/README.md` for provenance and the venue stops.
 
 ```bash
-pip install requests
-export TMB_APP_ID=... TMB_APP_KEY=...          # from https://developer.tmb.cat/
-python3 infra/resolve_stops.py                 # writes artifacts/SampleData/{stops,lines,metro_stations}.csv
+python3 infra/build_stops_from_osm.py            # rebuild stops.csv + lines.csv from OpenStreetMap (no key)
+python3 infra/resolve_stops.py                   # alternative: TMB Transit API (needs TMB_APP_ID / TMB_APP_KEY)
 ```
 
-Review the CSVs, commit them, and set the Function's `TMB_IBUS_STOPS` / `TMB_METRO_STATIONS` from their first
-columns (`StationCode` = TMB's `codi_estacio`, the codes iTransit expects). See `artifacts/SampleData/README.md`.
+Function settings from the committed files:
+
+```
+TMB_IBUS_STOPS=2689,2259,3347,1090,3477,1878,2700,662,32,2265,1297,956,3878,281,1210,1103,1282,784
+TMB_METRO_STATIONS=416,415,417,422,425,126,130,523,521,518
+```
 
 ## 2. Provision Event Hubs and the Function
 
