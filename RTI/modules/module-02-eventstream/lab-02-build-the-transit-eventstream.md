@@ -105,7 +105,6 @@ Confirm your environment matches this state before starting:
     - **Workspace**: `RTI Transit`
     - **Eventhouse**: `TransitEventhouse`
     - **KQL Database**: `TransitEventhouse`
-    - **KQL Destination table**: Click 'Create new', then en `BusArrivalsRaw`
     - **Click** **Save**.
 
     > ✅ Expected result: an **Eventhouse** destination node appears, connected to the stream. If it isn't
