@@ -74,6 +74,9 @@ See [`risk-fallback-plan.md`](risk-fallback-plan.md). Short version:
   own hubs), or someone typing `$Default` (which works for exactly one person per hub and then kicks others off).
 - **Manage fields can't see inside `payload`** → the stream had no schema yet when the pane opened. Refresh the
   data preview on the stream node first, then re-open the operator.
+- **SQL operator Test query returns 0 rows for everyone** → the Function isn't polling the venue stops. Check
+  the `key` values in any attendee's data preview against `TMB_IBUS_STOPS` (should include 2689, 3347, 1090).
+  This bit during authoring: the Function's example settings polled 108 and 1265 only.
 - **Eventhouse table not filling although the eventstream shows data** → they published before configuring
   the destination table, or picked *Event processing before ingestion* and left "Activate ingestion" unchecked.
   Live view → destination node → check status.

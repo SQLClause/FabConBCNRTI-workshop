@@ -277,13 +277,15 @@ can't be chained with other operators in the same path, so it hangs directly off
 25. In the **Outputs** section on the left, **click** **+**, **choose** **Stream**, and **rename** the output alias
     to `ForumNextBus`.
 
-26. **Replace** the query with the following. The `WHERE` line keeps only the venue stop, `2689` Diagonal Mar
-    (in quotes: `key` is text in the envelope). The input alias is the stream's name,
+26. **Replace** the query with the following. The `WHERE` line keeps the three venue stops in front of the CCIB
+    and at the metro entrance: `2689` Diagonal Mar (H16), `3347` Diagonal - Pl Llevant (line 7) and `1090` Metro
+    Maresme - Fòrum (136), so the stream carries one row per line. `TRY_CAST(... AS bigint)` makes the compare
+    work whether Eventstream inferred `key` as text or as a number. The input alias is the stream's name,
     `[BusArrivalsEventstream-stream]`; check it matches the **Inputs** entry on the left.
 
     ```sql
     WITH Stops AS (
-        SELECT e.[key] AS StopCode, e.payload.timestamp AS PolledMs, p.ArrayValue AS Stop
+        SELECT TRY_CAST(e.[key] AS bigint) AS StopCode, e.payload.timestamp AS PolledMs, p.ArrayValue AS Stop
         FROM [BusArrivalsEventstream-stream] e
         CROSS APPLY GetArrayElements(e.payload.parades) AS p
     ),
@@ -304,7 +306,7 @@ can't be chained with other operators in the same path, so it hangs directly off
            COUNT(*) AS Predictions
     INTO [ForumNextBus]
     FROM Buses
-    WHERE StopCode = '2689'
+    WHERE StopCode IN (2689, 3347, 1090)
     GROUP BY StopCode, StopName, LineCode, Destination, TumblingWindow(minute, 1)
     ```
 
@@ -315,12 +317,25 @@ can't be chained with other operators in the same path, so it hangs directly off
 
 27. **Click** **Test query**.
 
-    > ✅ Expected result: after 60–90 seconds the **Test result** tab shows one row per minute for stop 2689 and
-    > line H16 (the only TMB day line at that stop), `StopName` "Diagonal Mar", `Destination` "Pg. Zona Franca",
+    > ✅ Expected result: after 60–90 seconds the **Test result** tab shows one row per minute per line at the
+    > venue: H16 at Diagonal Mar, 7 at Diagonal - Pl Llevant, 136 at Metro Maresme - Fòrum, each with
     > `MinutesToArrival` as a decimal (for example `4.2`) and `Predictions` (usually `2`). If it shows an error
     > about an unknown column, the input alias name differs from what's on the left; copy it from there.
-    > (Want more lines in your venue stream? Change the `WHERE` to `StopCode IN ('2689', '3347', '1090')` to add
-    > line 7 and line 136 from the neighbouring stops.)
+
+    <details>
+    <summary>Troubleshooting — Test query returns 0 rows</summary>
+
+    Work through these in order:
+    1. **Is the stop in the feed?** The Function only polls the stops in its `TMB_IBUS_STOPS` setting. Check the
+       stream node's **Data preview**: the `key` values you see are the stops being polled. If 2689, 3347 and 1090
+       aren't among them, the filter can't match; tell the facilitator (the feed is misconfigured), or temporarily
+       put a `key` you *do* see in the `IN (...)` list to continue.
+    2. **Windows need time.** `TumblingWindow(minute, 1)` only emits when a window closes; Test query on a short
+       sample can show nothing even when everything is right. Remove the last three lines (`WHERE`, `GROUP BY`) and
+       the `MIN`/`COUNT` aggregates for a moment: if the flat rows appear, the query is fine; put them back,
+       publish, and check the `ForumNextBus` node's data preview after two minutes instead.
+    3. **Input alias**: copy it from the **Inputs** pane; a renamed eventstream changes it.
+    </details>
 
     *Adapted from: [Process events using a SQL operator](https://learn.microsoft.com/fabric/real-time-intelligence/event-streams/process-events-using-sql-code-editor)*
 
@@ -335,7 +350,8 @@ can't be chained with other operators in the same path, so it hangs directly off
     <summary>Troubleshooting — the SQL operator isn't offered in this tenant</summary>
 
     It's a preview feature. Fallback with no-code operators: from **ShapeBusArrivals** add a **Filter**
-    (`StopCode` equals `2689`) → **Group by** (Minimum of `ArrivalMs` by `LineCode`, `StopCode`,
+    (`StopCode` equals `2689`; add a second Filter for `3347` and `1090` if you want lines 7 and 136 too) →
+    **Group by** (Minimum of `ArrivalMs` by `LineCode`, `StopCode`,
     tumbling 1 minute) → **Stream** `ForumNextBus`. The derived stream then carries `MIN_ArrivalMs` (an instant)
     instead of `MinutesToArrival`; Module 05 has a matching fallback for its rules.
     </details>
