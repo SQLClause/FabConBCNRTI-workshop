@@ -1,7 +1,7 @@
 # Lab 02: Build the Transit Eventstream
 
 **Duration:** 35 minutes
-**Prerequisites:** Module 01 complete. `RTI Transit` contains `TransitEventhouse` (with its default KQL
+**Prerequisites:** Module 01 complete. Your workspace contains `TransitEventhouse` (with its default KQL
 database) and `TransitLakehouse`. You have the four values from the facilitator's seat sheet: Event Hubs
 **namespace name**, **your two hub names** (`tmb-ibus-1-65` + `tmb-metro-1-65`, or `tmb-ibus-66-130` +
 `tmb-metro-66-130`), the **`attendee-listen`** shared access key: `hmUG6ik4kG63LStmc4uKY6EX/DoCsTQ1e+AEhAypPIg=`, and **your** consumer group `user-NNN`.
@@ -18,7 +18,7 @@ database) and `TransitLakehouse`. You have the four values from the facilitator'
 ## Before you begin
 
 Confirm your environment matches this state before starting:
-- [ ] `RTI Transit` workspace open; `TransitEventhouse` and `TransitLakehouse` present.
+- [ ] Your dedicated workspace open; `TransitEventhouse` and `TransitLakehouse` present.
 - [ ] Namespace name, your two hub names, the `attendee-listen` key, and your `user-NNN` written down.
       **Do not use `$Default`**, and don't use the other user range's hubs: your consumer group only exists on yours.
 - [ ] You know the **venue stop code** (first row of
