@@ -106,6 +106,8 @@ az functionapp config appsettings set \
     "EVENT_HUB_NAME_IBUS_66_130=tmb-ibus-66-130" \
     "EVENT_HUB_NAME_METRO_1_65=tmb-metro-1-65" \
     "EVENT_HUB_NAME_METRO_66_130=tmb-metro-66-130" \
+    "TMB_IBUS_STOPS=2689,2259,3347,1090,3477,1878,2700,662,32,2265,1297,956,3878,281,1210,1103,1282,784" \
+    "TMB_METRO_STATIONS=416,415,417,422,425,126,130,523,521,518" \
   --output none
 
 printf 'Configured %s with four Event Hubs and 65 workshop consumer groups per hub.\n' "$namespace"
