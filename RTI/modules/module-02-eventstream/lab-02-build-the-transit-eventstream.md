@@ -173,7 +173,7 @@ Confirm your environment matches this state before starting:
     on the stream node showed rows (step 8), then re-open the Manage fields pane.
     </details>
 
-18. **Hover** over **PickStops**, **click** **+**, **select** **Expand**. **Operation name** `OnePerStop`,
+18. **Hover** over **PickStops**, **click** **+**, **select** **Transform events**, **select** **Expand** from selection menu. **Operation name** `OnePerStop`,
     **Array field** `Stops`, **click** **Save**.
 
     ![Step 18](../../assets/screenshots/lab-02/step-05.png)
