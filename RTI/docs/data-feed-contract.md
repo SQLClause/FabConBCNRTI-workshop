@@ -23,7 +23,7 @@ to turn a nested API payload into flat, typed events is part of the course, so t
    refreshes predictions every 20–40 s ([TMB iBus](https://www.tmb.cat/en/barcelona/tmb-ibus)); iMetro at least every
    10–15 s. Polling faster than 30 s buys nothing.
 
-### Bus stops (`GET /v1/ibus/stops/{stopCode}`; one call returns every line at that stop)
+### Bus stops (`GET /v1/itransit/bus/parades/{stopCode}`; one call returns every line at that stop)
 
 TMB stop codes are only obtainable from the authenticated developer API, so this table lists *landmarks* and
 preferred lines; [`../infra/resolve_stops.py`](../infra/resolve_stops.py) turns it into exact `StopCode`s by querying
@@ -118,18 +118,23 @@ Europe/Madrid on the day, so the plan's daily budget isn't burnt overnight and L
 | `fetchedAt` | datetime | Function clock, UTC, ISO-8601 |
 | `payload` | object | The raw TMB JSON |
 
-### 3.1 iBus payload (`source = tmb.ibus`, hubs `tmb-ibus-*`)
+### 3.1 iTransit bus payload (`source = tmb.ibus`, hubs `tmb-ibus-*`, from `GET /v1/itransit/bus/parades/{stop}`)
 
-```json
-{"status":"success","data":{"ibus":[
-  {"line":"H16","routeId":"1601","destination":"Forum Campus Besos","t-in-min":4,"t-in-s":230,"text-ca":"4 min"},
-  {"line":"7","routeId":"701","destination":"Zona Universitaria","t-in-min":11,"t-in-s":655,"text-ca":"11 min"},
-  {"line":"H16","routeId":"1601","destination":"Forum Campus Besos","t-in-min":13,"t-in-s":790,"text-ca":"13 min"}
-]}}
+```
+{"timestamp": <epoch ms>,
+ "parades": [ {"codi_parada": "1265", "nom_parada": "Pg de Sant Joan - Còrsega",
+               "linies_trajectes": [ {"codi_linia": 208, "nom_linia": "H8", "id_sentit": 2, "codi_trajecte": "2081",
+                                      "desti_trajecte": "Ernest Lluch", "id_operador": 2, "transit_namespace": "bus",
+                                      "propers_busos": [ {"temps_arribada": <epoch ms>, "id_bus": 6405,
+                                                          "info_bus": {"accessibilitat": {"estat_rampa": "SENSE_INCIDENCIA"}}} ] } ] } ] }
 ```
 
-One element per upcoming bus (usually two per line), unordered across lines. Sample:
-[`../artifacts/EventSamples/ibus-envelope.json`](../artifacts/EventSamples/ibus-envelope.json).
+Three nested arrays: the stop (one element, since the Function asks for one stop per call), the lines and
+directions serving it, and the next buses per line (usually two). There is **no relative time**: `temps_arribada`
+is an absolute arrival instant, so the wait is `temps_arribada − timestamp` (TMB's clock on both sides). The stop
+**name** is included; coordinates, zone and line origin/destination are not. Real sample:
+[`../artifacts/EventSamples/ibus-envelope.json`](../artifacts/EventSamples/ibus-envelope.json). (The old
+`ibus/stops/{stop}` endpoint with its `status/data/ibus` shape is deprecated and no longer used.)
 
 ### 3.2 iTransit metro payload (`source = tmb.imetro`, hubs `tmb-metro-*`)
 
@@ -149,23 +154,32 @@ Four nested arrays; `temps_arribada` is an **absolute** arrival instant. Real sa
 
 These names are used verbatim in every lab, KQL statement, dashboard query and Activator rule. Change one, change all.
 
-### 4.1 Bus (derived in Lab 02's Eventstream operators and Lab 03's `EnrichBusArrivals()` update policy)
+### 4.1 Bus (derived in Lab 02's Eventstream operators and SQL operator, and Lab 03's `EnrichBusArrivals()` update policy)
 
-| Flat field | Type | From | Notes |
+| Flat field | Type | From | Where |
 |---|---|---|---|
-| `PolledAtUtc` | datetime | `fetchedAt` | Event time downstream |
-| `StopCode` | long | `tolong(key)` | Join key to `StopsDim` |
-| `LineCode` | string | `payload.data.ibus[].line` | Join key to `LinesDim`; `H16` |
-| `LineFamily` | string | `Left(LineCode, 1)` (Eventstream only) | `H`/`V`/`D` orthogonal network, digit = trunk |
-| `RouteId` | string | `…routeId` | Direction identifier |
-| `Destination` | string | `…destination` | Terminus |
-| `MinutesToArrival` | long | `…["t-in-min"]` | The number the alerts use |
-| `SecondsToArrival` | long | `…["t-in-s"]` | |
-| `Rank` | long | KQL only: `row_number()` per stop/line/poll ordered by `SecondsToArrival` | `1` = next bus. Not available in the no-code stream, which uses **Minimum** aggregates instead |
-| `PredictedArrivalUtc` | datetime | KQL only: `PolledAtUtc + SecondsToArrival * 1s` | |
+| `PolledAtUtc` | datetime | `fetchedAt` | all |
+| `TmbTimestamp` | datetime | `payload.timestamp` (epoch ms) | KQL (`PolledMs` as raw epoch in the no-code stream) |
+| `StopCode` | long | `tolong(key)` | all; join key to `StopsDim` |
+| `StopName` | string | `parades[].nom_parada` (KQL prefers `StopsDim.StopName`, falls back to it) | all |
+| `LineCode` | string | `linies_trajectes[].nom_linia` | all; join key to `LinesDim`; `H8`, `47`, `V19` |
+| `LineFamily` | string | `Left(LineCode, 1)` | no-code stream only; `H`/`V`/`D` orthogonal network, digit = trunk |
+| `RouteId`, `DirectionId` | string, long | `linies_trajectes[].codi_trajecte`, `.id_sentit` | KQL and no-code stream |
+| `Destination` | string | `linies_trajectes[].desti_trajecte` | all |
+| `BusId` | long | `propers_busos[].id_bus` | KQL and no-code stream |
+| `ArrivalMs` | long | `propers_busos[].temps_arribada` (raw epoch) | no-code stream; `MIN_ArrivalMs` after the Group by |
+| `PredictedArrivalUtc` | datetime | `temps_arribada` → datetime | KQL |
+| `SecondsToArrival` | long | `PredictedArrivalUtc − TmbTimestamp` | KQL |
+| `MinutesToArrival` | real | `SecondsToArrival / 60` (KQL); `MIN((temps_arribada − timestamp) / 60000.0)` per line per minute (SQL operator → `ForumNextBus`) | KQL and the SQL-operator derived stream; **the number the alerts and dashboards use** |
+| `Rank` | long | `row_number()` per stop/line/poll ordered by `PredictedArrivalUtc` | KQL only; `1` = next bus. The no-code stream uses **Minimum** aggregates instead |
 
-Plus, after enrichment: `StopName`, `Zone`, `Lat`, `Lon` (from `StopsDim`) and `LineName`, `LineOrigin`,
-`LineDestination` (from `LinesDim`).
+Plus, after enrichment: `Zone`, `Lat`, `Lon` (from `StopsDim`) and `LineName`, `LineOrigin`, `LineDestination`
+(from `LinesDim`).
+
+Why three places: the no-code Manage fields operator has no arithmetic between two fields, so the stream branch
+that needs minutes (Activator, Lab 05) is built with the **SQL operator** (preview; `CROSS APPLY GetArrayElements`
+for the three arrays, subtraction for the minutes), and the branch that only needs a per-minute aggregate keeps the
+raw epoch (`MIN_ArrivalMs`) and lets KQL subtract at query time.
 
 ### 4.2 Metro (derived in Lab 03 Part F's `MetroArrivalsFlat()` function)
 
@@ -181,9 +195,11 @@ Plus, after enrichment: `StopName`, `Zone`, `Lat`, `Lon` (from `StopsDim`) and `
 
 ## 5. Behaviour the labs rely on
 
-- **Continuous flow**: one iBus envelope per stop every 30 s during the session (Lab 02 preview, Lab 04 live
-  refresh, Lab 05 heartbeat = 10 minutes of silence).
-- **Two predictions per line** in most iBus responses: Lab 03's bunching query compares `Rank 1` and `Rank 2`.
+- **Continuous flow**: one bus envelope per stop every 30 s during the session (Lab 02 preview, Lab 04 live
+  refresh, Lab 05 heartbeat = 10 minutes of silence). A stop can legitimately have an empty `propers_busos` for a
+  line when TMB has no active prediction; the labs tolerate that.
+- **Two predictions per line** in most responses: Lab 03's bunching query compares `Rank 1` and `Rank 2`.
+- **Eventstream name without underscores or dots** (`BusArrivalsEventstream`): the SQL operator refuses others.
 - **Occasional long waits**: real data produces next-bus predictions above 12 minutes several times an hour on
   the less frequent lines; Lab 05's `Long wait at the Fòrum` is tuned to that. If the dry run between 11:00 and
   13:00 never fires it, lower the threshold in Lab 05 to 10.

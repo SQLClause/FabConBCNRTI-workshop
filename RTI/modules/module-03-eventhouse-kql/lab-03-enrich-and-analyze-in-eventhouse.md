@@ -9,8 +9,9 @@ to copy from.
 
 **Learning objectives**
 - Query a raw table of API envelopes with KQL: `top`, `summarize … by bin()`, `render`, and reach into JSON with
-  `payload.data.ibus`, `tostring()`, `tolong()`.
-- **Flatten** nested arrays with `mv-expand` and compute a rank with `row_number()`.
+  `payload.parades[0].nom_parada`, `tostring()`, `tolong()`, `unixtime_milliseconds_todatetime()`.
+- **Flatten** three nested arrays with `mv-expand`, compute the wait from two epoch clocks, and compute a rank with
+  `row_number()`.
 - Load reference CSVs into KQL tables through the portal and fix an inferred type.
 - Author an **update policy** (target table + function + policy) that flattens and enriches at ingestion time.
 - Author a **materialized view** that keeps the newest prediction per stop and line.
@@ -44,20 +45,22 @@ Confirm your environment matches this state before starting:
    > JSON exactly as it arrived (**click** a cell to expand it). A2 draws a steady line of envelopes per minute,
    > one per stop per poll.
 
-3. **Run** **A3** (reach into the JSON) and **A4** (`mv-expand`: one row per prediction).
+3. **Run** **A3** (reach into the JSON) and **A4** (`mv-expand` three times: one row per bus).
 
-   > ✅ Expected result: A3 reads `payload.status` and counts `payload.data.ibus` with `array_length()`: the dot
-   > path into a `dynamic` column is the whole trick. A4 turns each envelope into one row per upcoming bus, typed
-   > with `tostring()` / `tolong()`; note the bracket syntax `p["t-in-min"]` for a key with hyphens. This is exactly
-   > what Lab 02's Expand + Manage fields did, in five lines of KQL.
+   > ✅ Expected result: A3 converts `payload.timestamp` with `unixtime_milliseconds_todatetime()`, reads the stop's
+   > name at `payload.parades[0].nom_parada` and counts its lines with `array_length()`: the dot path into a
+   > `dynamic` column is the whole trick. A4 turns each envelope into one row per upcoming bus (stops → routes →
+   > buses), typed with `tostring()` / `tolong()`, and computes `MinutesToArrival` as the difference between TMB's
+   > arrival instant and TMB's own timestamp. This is exactly what Lab 02's three Expands, the Manage fields and the
+   > SQL operator did, in eight lines of KQL.
 
-4. **Run** **A5** (predictions by line) and **A6** (local time and predicted arrival instant).
+4. **Run** **A5** (observations by line) and **A6** (local time and predicted arrival).
 
-   > ✅ Expected result: A5 lists line codes like `H16`, `7`, `V15` with stop counts, and nothing else about them:
-   > no names, no origins. A6 shows `PolledAtLocal` two hours ahead of UTC and a `PredictedArrivalUtc` computed
-   > from `t-in-s`.
+   > ✅ Expected result: A5 lists line codes like `H8`, `47`, `V19` with stop counts, and nothing else about them:
+   > no origin, no destination name beyond what the trip says, no map position. A6 shows both times two hours
+   > ahead of UTC.
 
-<!-- facilitator: A5 is the "codes only" cliffhanger. Ask "which of these is the bus to the airport?" Nobody can tell. Part B fixes that. -->
+<!-- facilitator: A5 is the "codes only" cliffhanger. Ask "which of these goes to the Fòrum, and where on the map is this stop?" Nobody can tell from the feed alone. Part B fixes that. -->
 
 ### Part B — Load the reference data
 
@@ -103,9 +106,11 @@ Confirm your environment matches this state before starting:
     > ✅ Expected result: the table appears under **Tables** in the left pane (refresh it if needed). Empty. Note
     > its columns are the *flat* ones: no `payload`, no `key`; one row will mean one bus.
 
-12. **Paste** and **run** **C2** (create the `EnrichBusArrivals()` function). **Read** it before running: `mv-expand`
-    (A4), `project` with `tolong`/`tostring`, an `order by` followed by `row_number()` that restarts whenever the
-    stop, line or poll time changes (that's `Rank`: 1 = next bus), then the two `lookup`s (B4).
+12. **Paste** and **run** **C2** (create the `EnrichBusArrivals()` function). **Read** it before running: the three
+    `mv-expand`s (A4), `project` with `tolong`/`tostring`/`unixtime_milliseconds_todatetime`, the wait computed
+    against TMB's clock, an `order by` followed by `row_number()` that restarts whenever the stop, line or poll time
+    changes (that's `Rank`: 1 = next bus), then the two `lookup`s (B4) and a `coalesce` that prefers our stop name
+    over TMB's.
 
     > ✅ Expected result: `EnrichBusArrivals` appears under **Functions** (folder `Enrichment`). **Run**
     > `EnrichBusArrivals() | where Rank == 2 | take 5` to prove it behaves like a table and that `Rank` works.
@@ -166,9 +171,10 @@ Confirm your environment matches this state before starting:
 
     > ✅ Expected result:
     > - **E1** renders a time chart, one line per bus line.
-    > - **E2** draws nearly the same chart from `BusWaitByStopMinute` with far fewer rows. If its column names
-    >   differ from the script's, run `BusWaitByStopMinute | getschema` and adjust; the eventstream Group-by
-    >   names outputs `MIN_<field>` / `AVG_<field>` style.
+    > - **E2** draws nearly the same chart from `BusWaitByStopMinute` with far fewer rows, subtracting the window
+    >   end from the `MIN_ArrivalMs` instant to get minutes (the arithmetic the no-code branch couldn't do). If its
+    >   column names differ from the script's, run `BusWaitByStopMinute | getschema` and adjust; the eventstream
+    >   Group-by names outputs `MIN_<field>` / `COUNT_<field>` style.
     > - **E3** lists stop/line pairs where the next two buses are ≤ 2 minutes apart (bunching). At quiet times
     >   it may be empty; that's real.
     > - **E4** has `Lat`/`Lon` for every row: the map tile's input.

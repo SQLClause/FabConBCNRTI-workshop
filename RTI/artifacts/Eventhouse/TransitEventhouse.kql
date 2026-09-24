@@ -9,10 +9,14 @@
 //
 // Tables that already exist by the time you run this (created by Lab 02's
 // Eventstream destinations):
-//   BusArrivalsRaw        - one row per TMB iBus RESPONSE (raw envelope, direct ingestion):
-//                           source:string, key:string, fetchedAt:datetime, payload:dynamic
-//   BusWaitByStopMinute   - 1-minute tumbling aggregate, already flat (processed ingestion)
-//   MetroArrivalsRaw      - [metro] one row per iTransit response (raw envelope)
+//   BusArrivalsRaw        - one row per TMB iTransit bus RESPONSE (raw envelope, direct ingestion):
+//                           source:string, key:long, fetchedAt:datetime, payload:dynamic
+//                           payload = { timestamp, parades[ { codi_parada, nom_parada,
+//                                       linies_trajectes[ { nom_linia, codi_trajecte, id_sentit, desti_trajecte,
+//                                       propers_busos[ { temps_arribada, id_bus } ] } ] } ] }
+//   BusWaitByStopMinute   - 1-minute tumbling aggregate from the no-code branch (processed ingestion):
+//                           StopCode, StopName, LineCode, LineFamily, MIN_ArrivalMs, COUNT_ArrivalMs, Window_End_Time
+//   MetroArrivalsRaw      - [metro] one row per iTransit metro response (raw envelope)
 //
 // Tables loaded from CSV in Lab 03 Part B via Get data > Local file:
 //   StopsDim             - artifacts/SampleData/stops.csv
@@ -20,9 +24,10 @@
 //   MetroStationsDim     - artifacts/SampleData/metro_stations.csv  [metro]
 //
 // The point of Part C: the raw table holds TMB's nested JSON as it arrived.
-// Flattening it (mv-expand) and enriching it (lookup) happens INSIDE the
-// database, at ingestion time, via an update policy. See docs/data-feed-contract.md §4
-// for the flat field names.
+// Flattening it (three mv-expands), computing the wait from TMB's two epoch
+// clocks, and enriching it (lookup) happens INSIDE the database, at ingestion
+// time, via an update policy. See docs/data-feed-contract.md §4 for the flat
+// field names.
 // =============================================================================
 
 
@@ -40,35 +45,46 @@ BusArrivalsRaw
 | summarize Envelopes = count(), Stops = dcount(key) by bin(fetchedAt, 1m)
 | render timechart
 
-// A3. Reach into the JSON: status, and how many predictions each response holds
+// A3. Reach into the JSON with dot paths: TMB's clock, the stop name, how many lines serve the stop
 BusArrivalsRaw
 | where fetchedAt > ago(5m)
-| project fetchedAt, key, Status = tostring(payload.status), Predictions = array_length(payload.data.ibus)
+| project fetchedAt, key,
+          TmbTimestamp = unixtime_milliseconds_todatetime(tolong(payload.timestamp)),
+          StopName = tostring(payload.parades[0].nom_parada),
+          Routes = array_length(payload.parades[0].linies_trajectes)
 | top 20 by fetchedAt desc
 
-// A4. mv-expand: one row per prediction. This is the flattening step, done ad hoc.
+// A4. mv-expand x3: one row per upcoming bus, with the wait computed from TMB's two clocks.
+//     This is the flattening step, done ad hoc. Compare with Lab 02's three Expand operators.
 BusArrivalsRaw
 | where fetchedAt > ago(5m)
-| mv-expand p = payload.data.ibus
-| project PolledAtUtc = fetchedAt, StopCode = tolong(key),
-          LineCode = tostring(p.line), Destination = tostring(p.destination),
-          MinutesToArrival = tolong(p["t-in-min"]), SecondsToArrival = tolong(p["t-in-s"])
+| extend TmbTimestamp = unixtime_milliseconds_todatetime(tolong(payload.timestamp))
+| mv-expand stop = payload.parades
+| mv-expand route = stop.linies_trajectes
+| mv-expand bus = route.propers_busos
+| project PolledAtUtc = fetchedAt, StopCode = tolong(key), StopName = tostring(stop.nom_parada),
+          LineCode = tostring(route.nom_linia), Destination = tostring(route.desti_trajecte),
+          PredictedArrivalUtc = unixtime_milliseconds_todatetime(tolong(bus.temps_arribada))
+| extend MinutesToArrival = round((PredictedArrivalUtc - TmbTimestamp) / 1m, 1)
 | top 20 by PolledAtUtc desc
 
-// A5. Which lines and stops are we seeing? (codes only -- no names yet)
+// A5. Which lines and stops are we seeing? (codes and a stop name -- but no coordinates, zone, or line details)
 BusArrivalsRaw
 | where fetchedAt > ago(15m)
-| mv-expand p = payload.data.ibus
-| summarize Predictions = count(), Stops = dcount(key) by LineCode = tostring(p.line)
-| order by Predictions desc
+| mv-expand stop = payload.parades
+| mv-expand route = stop.linies_trajectes
+| summarize Observations = count(), Stops = dcount(key) by LineCode = tostring(route.nom_linia)
+| order by Observations desc
 
 // A6. Local time, and the predicted arrival instant
 BusArrivalsRaw
 | where fetchedAt > ago(5m)
-| mv-expand p = payload.data.ibus
-| extend PolledAtLocal = datetime_utc_to_local(fetchedAt, 'Europe/Madrid'),
-         PredictedArrivalUtc = fetchedAt + tolong(p["t-in-s"]) * 1s
-| project PolledAtLocal, StopCode = tolong(key), LineCode = tostring(p.line), MinutesToArrival = tolong(p["t-in-min"]), PredictedArrivalUtc
+| mv-expand stop = payload.parades
+| mv-expand route = stop.linies_trajectes
+| mv-expand bus = route.propers_busos
+| project PolledAtLocal = datetime_utc_to_local(fetchedAt, 'Europe/Madrid'),
+          StopCode = tolong(key), LineCode = tostring(route.nom_linia),
+          PredictedArrivalLocal = datetime_utc_to_local(unixtime_milliseconds_todatetime(tolong(bus.temps_arribada)), 'Europe/Madrid')
 | top 20 by PolledAtLocal desc
 
 
@@ -92,9 +108,13 @@ StopsDim | getschema | where ColumnName == "StopCode"
 // B4. First enriched look, ad hoc: flatten + lookup (this is what the update policy will run)
 BusArrivalsRaw
 | where fetchedAt > ago(5m)
-| mv-expand p = payload.data.ibus
-| project PolledAtUtc = fetchedAt, StopCode = tolong(key), LineCode = tostring(p.line),
-          Destination = tostring(p.destination), MinutesToArrival = tolong(p["t-in-min"])
+| extend TmbTimestamp = unixtime_milliseconds_todatetime(tolong(payload.timestamp))
+| mv-expand stop = payload.parades
+| mv-expand route = stop.linies_trajectes
+| mv-expand bus = route.propers_busos
+| project PolledAtUtc = fetchedAt, StopCode = tolong(key), LineCode = tostring(route.nom_linia),
+          Destination = tostring(route.desti_trajecte),
+          MinutesToArrival = round((unixtime_milliseconds_todatetime(tolong(bus.temps_arribada)) - TmbTimestamp) / 1m, 1)
 | lookup kind=leftouter StopsDim on StopCode
 | lookup kind=leftouter LinesDim on LineCode
 | project PolledAtUtc, StopName, Zone, LineCode, LineName, Destination, MinutesToArrival, Lat, Lon
@@ -108,6 +128,7 @@ BusArrivalsRaw
 // C1. Target table: flat prediction columns + dimension columns.
 .create-merge table BusArrivalsEnriched (
     PolledAtUtc         : datetime,
+    TmbTimestamp        : datetime,
     PredictedArrivalUtc : datetime,
     StopCode            : long,
     StopName            : string,
@@ -119,41 +140,54 @@ BusArrivalsRaw
     LineOrigin          : string,
     LineDestination     : string,
     RouteId             : string,
+    DirectionId         : long,
     Destination         : string,
+    BusId               : long,
     Rank                : long,
-    MinutesToArrival    : long,
+    MinutesToArrival    : real,
     SecondsToArrival    : long
 )
 
-// C2. The flatten + enrich function. Parameter-less; its output schema must match C1 exactly.
-//     Rank: 1 = next bus of that line at that stop in this poll, via row_number() over a serialized
-//     (ordered) input that resets whenever stop, line or poll time changes.
-.create-or-alter function with (docstring = "Flatten TMB iBus envelopes (mv-expand) and enrich with stop/line reference data. Used by the update policy on BusArrivalsRaw.", folder = "Enrichment")
+// C2. The flatten + compute + enrich function. Parameter-less; its output schema must match C1 exactly.
+//     - three mv-expands: parades -> linies_trajectes -> propers_busos (one row per bus)
+//     - the wait is TMB's arrival instant minus TMB's own timestamp (not our fetchedAt)
+//     - Rank: 1 = next bus of that line at that stop in this poll, via row_number() over a serialized
+//       (ordered) input that resets whenever stop, line or poll time changes
+//     - StopName: prefer our StopsDim name, fall back to TMB's nom_parada
+.create-or-alter function with (docstring = "Flatten TMB iTransit bus envelopes (mv-expand x3), compute the wait from TMB's clocks, and enrich with stop/line reference data. Used by the update policy on BusArrivalsRaw.", folder = "Enrichment")
 EnrichBusArrivals() {
     BusArrivalsRaw
-    | where source == "tmb.ibus" and tostring(payload.status) == "success"
-    | mv-expand p = payload.data.ibus
-    | project PolledAtUtc = fetchedAt,
+    | where source == "tmb.ibus"
+    | extend PolledAtUtc = fetchedAt,
+             TmbTimestamp = unixtime_milliseconds_todatetime(tolong(payload.timestamp))
+    | mv-expand stop = payload.parades
+    | mv-expand route = stop.linies_trajectes
+    | mv-expand bus = route.propers_busos
+    | project PolledAtUtc, TmbTimestamp,
               StopCode = tolong(key),
-              LineCode = tostring(p.line),
-              RouteId = tostring(p.routeId),
-              Destination = tostring(p.destination),
-              MinutesToArrival = tolong(p["t-in-min"]),
-              SecondsToArrival = tolong(p["t-in-s"])
-    | where isnotempty(LineCode)
-    | extend PredictedArrivalUtc = PolledAtUtc + SecondsToArrival * 1s
-    | order by StopCode asc, LineCode asc, PolledAtUtc asc, SecondsToArrival asc
+              StopNameTmb = tostring(stop.nom_parada),
+              LineCode = tostring(route.nom_linia),
+              RouteId = tostring(route.codi_trajecte),
+              DirectionId = tolong(route.id_sentit),
+              Destination = tostring(route.desti_trajecte),
+              BusId = tolong(bus.id_bus),
+              PredictedArrivalUtc = unixtime_milliseconds_todatetime(tolong(bus.temps_arribada))
+    | where isnotempty(LineCode) and isnotnull(PredictedArrivalUtc)
+    | extend SecondsToArrival = max_of(0, tolong((PredictedArrivalUtc - TmbTimestamp) / 1s))
+    | extend MinutesToArrival = round(SecondsToArrival / 60.0, 1)
+    | order by StopCode asc, LineCode asc, PolledAtUtc asc, PredictedArrivalUtc asc
     | extend Rank = row_number(1, prev(StopCode) != StopCode or prev(LineCode) != LineCode or prev(PolledAtUtc) != PolledAtUtc)
     | lookup kind=leftouter (StopsDim | project StopCode, StopName, Zone, Lat, Lon) on StopCode
     | lookup kind=leftouter (LinesDim | project LineCode, LineName, LineOrigin, LineDestination) on LineCode
-    | project PolledAtUtc, PredictedArrivalUtc, StopCode, StopName, Zone, Lat, Lon,
-              LineCode, LineName, LineOrigin, LineDestination, RouteId, Destination,
+    | extend StopName = coalesce(StopName, StopNameTmb)
+    | project PolledAtUtc, TmbTimestamp, PredictedArrivalUtc, StopCode, StopName, Zone, Lat, Lon,
+              LineCode, LineName, LineOrigin, LineDestination, RouteId, DirectionId, Destination, BusId,
               Rank, MinutesToArrival, SecondsToArrival
 }
 
-// C3. Attach the policy. From now on every batch landing in BusArrivalsRaw is flattened and
-//     enriched into BusArrivalsEnriched at ingestion time. A batch is one poll cycle, so the
-//     row_number() partitioning in C2 sees every prediction of a stop/line together.
+// C3. Attach the policy. From now on every batch landing in BusArrivalsRaw is flattened, computed and
+//     enriched into BusArrivalsEnriched at ingestion time. A batch is one poll cycle, so the row_number()
+//     partitioning in C2 sees every prediction of a stop/line together.
 .alter table BusArrivalsEnriched policy update
 @'[{ "IsEnabled": true, "Source": "BusArrivalsRaw", "Query": "EnrichBusArrivals()", "IsTransactional": false, "PropagateIngestionProperties": false }]'
 
@@ -213,20 +247,24 @@ BusArrivalsEnriched
 | summarize AvgWaitMin = avg(MinutesToArrival) by bin(PolledAtUtc, 5m), LineCode
 | render timechart
 
-// E2. The processed table from the eventstream tells the same story with 1/60th of the rows
+// E2. The processed table from the eventstream tells the same story with 1/60th of the rows.
+//     It carries the next bus's arrival INSTANT (MIN_ArrivalMs, epoch ms); the wait is that instant minus
+//     the window end -- the subtraction the no-code operators couldn't do, done here instead.
 BusWaitByStopMinute
 | where Window_End_Time > ago(2h)
-| summarize AvgWaitMin = avg(MIN_MinutesToArrival) by bin(Window_End_Time, 5m), LineCode
+| extend WaitMin = (unixtime_milliseconds_todatetime(MIN_ArrivalMs) - Window_End_Time) / 1m
+| summarize AvgWaitMin = avg(WaitMin) by bin(Window_End_Time, 5m), LineCode
 | render timechart
-// (column names follow the Group-by operator's convention: MIN_<field>, AVG_<field>, COUNT_<field>, Window_End_Time;
+// (column names follow the Group-by operator's convention: MIN_<field>, COUNT_<field>, Window_End_Time;
 //  check with:  BusWaitByStopMinute | getschema )
 
 // E2b. Same table, by line family (H/V/D orthogonal network vs trunk lines) -- LineFamily was computed in the
-//      eventstream's Manage fields operator with Left(LineCode, 1)
+//      eventstream's Manage fields operator with Left(nom_linia, 1)
 BusWaitByStopMinute
 | where Window_End_Time > ago(2h)
-| extend Family = case(LineFamily in ("H", "V", "D"), strcat("Orthogonal ", LineFamily), "Trunk")
-| summarize AvgWaitMin = avg(MIN_MinutesToArrival) by bin(Window_End_Time, 5m), Family
+| extend WaitMin = (unixtime_milliseconds_todatetime(MIN_ArrivalMs) - Window_End_Time) / 1m,
+         Family = case(LineFamily in ("H", "V", "D"), strcat("Orthogonal ", LineFamily), "Trunk")
+| summarize AvgWaitMin = avg(WaitMin) by bin(Window_End_Time, 5m), Family
 | render timechart
 
 // E3. Bus bunching: when the gap between the next bus and the one after is under 2 minutes
@@ -252,12 +290,12 @@ BusArrivalsEnriched
 | extend SilentForMin = toint((now() - LastSeen) / 1m)
 | order by SilentForMin desc
 
-// E6. Feed health from the envelopes: TMB responses that weren't "success", and empty responses
+// E6. Feed health from the envelopes: responses with no predictions at all, and TMB clock skew vs our clock
 BusArrivalsRaw
 | where fetchedAt > ago(1h)
-| summarize Total = count(),
-            NotSuccess = countif(tostring(payload.status) != "success"),
-            Empty = countif(array_length(payload.data.ibus) == 0)
+| extend Buses = array_length(payload.parades[0].linies_trajectes),
+         SkewSeconds = (fetchedAt - unixtime_milliseconds_todatetime(tolong(payload.timestamp))) / 1s
+| summarize Total = count(), Empty = countif(Buses == 0 or isnull(Buses)), AvgSkewSeconds = round(avg(SkewSeconds), 1)
           by bin(fetchedAt, 10m)
 | render columnchart
 
@@ -266,8 +304,8 @@ BusArrivalsRaw
 // PART F (stretch). Metro: four nested arrays, one function; the interchange query; OneLake availability
 // -----------------------------------------------------------------------------
 
-// F1. [metro] Flatten the iTransit envelope. Four mv-expands, one per nesting level.
-//     temps_arribada is an absolute epoch-ms instant, so SecondsToArrival is computed against TMB's own timestamp.
+// F1. [metro] Flatten the iTransit metro envelope. Four mv-expands, one per nesting level.
+//     Same idea as C2 with one more level; temps_arribada is again an absolute epoch-ms instant.
 .create-or-alter function with (docstring = "Flatten TMB iTransit metro envelopes: one row per station x track x route x upcoming train.", folder = "Enrichment")
 MetroArrivalsFlat() {
     MetroArrivalsRaw
@@ -304,7 +342,7 @@ MetroArrivalsFlat()
 // F3. [metro] The interchange question: at the Fòrum right now, bus or metro first?
 let bus = BusNextArrivalLatest
     | where Zone == "Venue"
-    | project Mode = "Bus", Service = strcat(LineCode, " → ", Destination), WaitMin = todouble(MinutesToArrival), PolledAtUtc;
+    | project Mode = "Bus", Service = strcat(LineCode, " → ", Destination), WaitMin = MinutesToArrival, PolledAtUtc;
 let metro = MetroArrivalsFlat()
     | where Rank == 1
     | summarize arg_max(PolledAtUtc, *) by StationCode, RouteId

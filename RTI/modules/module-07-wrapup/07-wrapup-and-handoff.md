@@ -12,9 +12,10 @@
 
 1. **Workspace & hub** (Module 01): `RTI Transit`, `TransitEventhouse`, `TransitLakehouse`; a tour of Real-Time hub.
 2. **Ingest & shape** (Module 02): `BusArrivalsEventstream` reading the shared TMB feed through *your* consumer
-   group; raw envelopes → `BusArrivalsRaw` (direct); **flattened** with Manage fields + Expand, then a 1-minute
-   tumbling aggregate → `BusWaitByStopMinute` (processed); venue-only next-bus derived stream `ForumNextBus`; a
-   second stream created from the hub for metro.
+   group; raw envelopes → `BusArrivalsRaw` (direct); **flattened three arrays deep** with Manage fields + Expand,
+   then a 1-minute tumbling aggregate → `BusWaitByStopMinute` (processed); the same flattening plus the
+   minutes arithmetic in the **SQL operator** → venue-only derived stream `ForumNextBus`; a second stream created
+   from the hub for metro.
 3. **Store, flatten again, enrich, summarise** (Module 03): reference CSVs as `StopsDim`/`LinesDim`; an **update
    policy** (`EnrichBusArrivals()`: `mv-expand` + `lookup` + `Rank` → `BusArrivalsEnriched`); a **materialized
    view** (`BusNextArrivalLatest`); saved analysis queries; the four-level metro flatten as a stretch.

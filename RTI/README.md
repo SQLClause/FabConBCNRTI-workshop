@@ -43,10 +43,10 @@ Used consistently across every lab, script and doc in this folder. Keep future e
   - Update-policy target: `BusArrivalsEnriched` (function `EnrichBusArrivals()`: `mv-expand` + `lookup` + `Rank`)
   - Metro flattening function: `MetroArrivalsFlat()`
   - Materialized view: `BusNextArrivalLatest` (`arg_max(PolledAtUtc, *)` by `StopCode`, `LineCode`, `Rank == 1`)
-  - Aggregated table fed by Eventstream: `BusWaitByStopMinute` (`MIN_/AVG_/COUNT_MinutesToArrival` per stop/line/minute)
+  - Aggregated table fed by Eventstream: `BusWaitByStopMinute` (`MIN_ArrivalMs`, `COUNT_ArrivalMs` per stop/line/minute; the wait is computed in KQL from the instant)
 - Eventstreams: **`BusArrivalsEventstream`** (Azure Event Hubs source `tmb-ibus-1-65` or `tmb-ibus-66-130`), **`MetroArrivalsEventstream`** (source `tmb-metro-1-65` or `tmb-metro-66-130`); the user range comes from the attendee's seat sheet
-  - Operators: `PickPredictions` (Manage fields) → `OnePerBus` (Expand) → `ShapeBusArrivals` (Manage fields) → `WaitByStopMinute` (Group by) / `VenueStopOnly` (Filter) → `NextBusByLine` (Group by)
-  - Derived stream: `ForumNextBus` (next bus per line at the venue stop, per minute)
+  - No-code branch: `PickStops` (Manage fields) → `OnePerStop` → `OnePerRoute` → `OnePerBus` (Expand ×3) → `ShapeBusArrivals` (Manage fields) → `NextBusByStopMinute` (Group by) → `BusWaitByStopMinute`
+  - SQL branch: `VenueNextBusSql` (SQL operator: `CROSS APPLY GetArrayElements` ×3, `(temps_arribada − timestamp)/60000`, venue filter, 1-minute window) → derived stream `ForumNextBus` (`MinutesToArrival` per line per minute at the venue stop)
 - Lakehouse: **`TransitLakehouse`** (folder `Files/reference/`, table `Stops`)
 - KQL Queryset: **`TransitQueries`**
 - Real-Time Dashboard: **`TransitOpsDashboard`**

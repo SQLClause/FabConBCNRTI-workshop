@@ -14,9 +14,10 @@ Presenter-only notes. Not part of the attendee handout.
   `tmb-ibus-1-65` and `tmb-ibus-66-130` (and the metro pair); users 1–65 have consumer groups `user-001`…`user-065`
   on the first pair, users 66–130 have `user-066`…`user-130` on the second. Hand out the seat sheet at the start
   of Module 02, not before; people lose paper.
-- **The feed is raw on purpose.** The Function publishes TMB's JSON unchanged inside an envelope. Flattening it,
-  in Eventstream (Lab 02, Expand) and in KQL (Lab 03, `mv-expand`), is a learning objective, not a chore. Don't
-  "help" by pre-flattening it in the Function.
+- **The feed is raw on purpose.** The Function publishes TMB's JSON unchanged inside an envelope: three nested
+  arrays and two epoch clocks, no "minutes". Flattening it, in Eventstream (Lab 02, Expand ×3 and the SQL
+  operator) and in KQL (Lab 03, `mv-expand` ×3), is a learning objective, not a chore. Don't "help" by
+  pre-flattening or pre-computing in the Function.
 - **Teach → show → do.** Each theory file ends with a "Live demo before the lab" script on the instructor
   workspace. With 120 people the demo is what keeps the helpers from drowning; don't skip it to buy lab time.
 - **Theory lives in `XX-theory-*.md`, delivered live.** Same convention as the IQ half. Slides are not built
@@ -32,9 +33,11 @@ Presenter-only notes. Not part of the attendee handout.
       project the namespace and listen key.
 - [ ] Run [`../infra/resolve_stops.py`](../infra/resolve_stops.py) once, review `artifacts/SampleData/stops.csv`
       and `metro_stations.csv`, commit them, and set the Function's `TMB_IBUS_STOPS` / `TMB_METRO_STATIONS` from them.
-- [ ] During the dry run, confirm the Eventstream field picker shows `payload → data → ibus` (Lab 02 step 17) and
-      that the Get data wizard lands `payload` as `dynamic` (step 13). Both are the steps most likely to look
-      different in a newer portal build.
+- [ ] During the dry run, confirm: the Eventstream field picker shows `payload → parades` (Lab 02 step 17); Expand
+      accepts the nested `Stops → linies_trajectes` path (step 19) or note the Manage-fields workaround; the Get
+      data wizard lands `payload` as `dynamic` (step 13); and the SQL operator accepts the step 26 query with the
+      input alias `[BusArrivalsEventstream-stream]`. These are the steps most likely to look different in a newer
+      portal build, and the SQL operator is preview.
 - [ ] Dry run **every lab** against a fresh workspace within 72 hours of the event. Record 60+ minutes of
       live events to JSONL for the replay fallback.
 - [ ] Confirm whether the Microsoft-provided accounts have Teams. If not, say so in Module 05's theory so nobody
@@ -72,7 +75,7 @@ See [`risk-fallback-plan.md`](risk-fallback-plan.md). Short version:
   the destination table, or picked *Event processing before ingestion* and left "Activate ingestion" unchecked.
   Live view → destination node → check status.
 - **Activator rule never fires** → check the rule is grouped by `LineCode` (not `StopCode`), the field is the
-  `MIN_MinutesToArrival` column of the `ForumNextBus` stream, and that the rule is *started*. Then use **Send me
+  `MinutesToArrival` column of the `ForumNextBus` stream, and that the rule is *started*. Then use **Send me
   a test alert**, which works off history.
 - **OneLake event doesn't trigger the notebook** → the event filter on `subject` is case-sensitive and the
   folder path must match `Files/reference/` exactly; also the alert must be *started*.

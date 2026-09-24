@@ -2,8 +2,8 @@
 
 **Duration:** 23 minutes
 **Prerequisites:** Module 02 complete: `BusArrivalsEventstream` is published with the derived stream
-`ForumNextBus` (one row per line at your venue stop per minute, with `MIN_MinutesToArrival`). You know your own
-email address on the event account (and whether Teams is available; the facilitator says so).
+`ForumNextBus` from the SQL operator (one row per line at your venue stop per minute, with `MinutesToArrival`).
+You know your own email address on the event account (and whether Teams is available; the facilitator says so).
 
 **Learning objectives**
 - Add an Activator destination to a derived stream and create the `TransitAlerts` item.
@@ -15,11 +15,14 @@ email address on the event account (and whether Teams is available; the facilita
 ## Before you begin
 
 - [ ] `BusArrivalsEventstream` → Live view → `ForumNextBus` → **Data preview** shows rows once a minute, all with
-      your venue `StopCode`, one per `LineCode`, and a `MIN_MinutesToArrival` column. (The exact column name is
-      whatever the Group by produced; check it here and use it below.)
-- [ ] If the derived stream doesn't exist (you skipped Lab 02 steps 22–24), add it now: Edit → `+` on
-      `ShapeBusArrivals` → Filter `StopCode equals <VENUE_STOP_CODE>` → `+` → Group by (Minimum of
-      `MinutesToArrival` by `LineCode`, `StopCode`, tumbling 1 minute) → `+` → Stream `ForumNextBus` → Publish.
+      your venue `StopCode`, one per `LineCode`, and a decimal `MinutesToArrival` column.
+- [ ] If the derived stream doesn't exist (you skipped Lab 02 Part D), add it now per Lab 02 steps 24–29.
+- [ ] **If you used Lab 02's no-code fallback** (no SQL operator in your tenant), your stream carries `MIN_ArrivalMs`
+      (an epoch instant) instead of minutes, and Activator can't subtract. Build rule 2 (heartbeat) exactly as
+      written below, skip rule 3, and build rule 1 as a **KQL Queryset alert** instead: in `TransitQueries`, run
+      `BusNextArrivalLatest | where Zone == "Venue" and MinutesToArrival > 12`, click **Set alert** on the ribbon,
+      condition **when the query returns rows**, action email, save into `TransitAlerts`. It evaluates on a schedule
+      rather than per event, which is the trade-off to name out loud.
 
 ## Steps
 
@@ -49,7 +52,7 @@ email address on the event account (and whether Teams is available; the facilita
 6. In the **Definition** pane:
    - **Rule name**: `Long wait at the Fòrum`
    - **Monitor**: **Check** → **On each event grouped by a field**; **Group by** `LineCode`; **field to check**
-     `MIN_MinutesToArrival`
+     `MinutesToArrival`
    - **Condition**: **Is greater than** → `12`
    - **Occurrence**: **When it has been true for** → `3` **minutes**
 
@@ -63,8 +66,8 @@ email address on the event account (and whether Teams is available; the facilita
    <summary>Troubleshooting — I don't see "grouped by a field" / the object choice</summary>
 
    Older Activator editors ask you to create an **object** first: select the stream → **New object** → **Object
-   ID** `LineCode`, **Properties** `MIN_MinutesToArrival`, `StopCode` → **Create**. Then create the rule on the
-   `MIN_MinutesToArrival` property of that object. Same result: one state per line.
+   ID** `LineCode`, **Properties** `MinutesToArrival`, `StopCode` → **Create**. Then create the rule on the
+   `MinutesToArrival` property of that object. Same result: one state per line.
    </details>
 
    *Adapted from: [Detection settings in Activator](https://learn.microsoft.com/fabric/real-time-intelligence/data-activator/activator-detection-conditions)*
@@ -73,7 +76,7 @@ email address on the event account (and whether Teams is available; the facilita
    confirmed Teams works).
    - **To**: your event-account email
    - **Subject**: `Long wait for line @LineCode at the Fòrum`
-   - **Headline**: `Next @LineCode bus in @MIN_MinutesToArrival min`
+   - **Headline**: `Next @LineCode bus in @MinutesToArrival min`
    - **Context**: add `StopCode` and the window timestamp
 
    > ✅ Expected result: typing `@` offers the stream's fields; the preview under **Edit action** renders the
@@ -112,7 +115,7 @@ email address on the event account (and whether Teams is available; the facilita
 ### Part D — Optional: Rule 3 `Bus arriving now` (stateful change)
 
 11. **New rule** on **ForumNextBus**: name `Bus arriving now`; grouped by `LineCode`; condition category
-    **Numeric change** → **Decreases below** → `2` on `MIN_MinutesToArrival`; action Teams or email, headline
+    **Numeric change** → **Decreases below** → `2` on `MinutesToArrival`; action Teams or email, headline
     `@LineCode is arriving at the Fòrum now`. **Save**, **Start**.
 
     > ✅ Expected result: this one fires once per line each time the prediction *crosses* below 2 minutes, not
@@ -143,7 +146,7 @@ email address on the event account (and whether Teams is available; the facilita
 
 At the end of this lab, your workspace contains Activator item **`TransitAlerts`**, fed by the `ForumNextBus`
 derived stream, with:
-- `Long wait at the Fòrum` — `MIN_MinutesToArrival` **Is greater than 12**, **true for 3 minutes**, grouped by `LineCode`, **Running**
+- `Long wait at the Fòrum` — `MinutesToArrival` **Is greater than 12**, **true for 3 minutes**, grouped by `LineCode`, **Running**
 - `Stop went silent` — **No presence of data** for 10 minutes, grouped by `LineCode`, **Running**
 - optionally `Bus arriving now` — **Decreases below 2**, **Running**
 

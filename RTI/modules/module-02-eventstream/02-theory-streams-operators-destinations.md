@@ -12,18 +12,23 @@
 ## The mental model
 
 ```
- [source] ──► default stream ──► [destination: Eventhouse, direct ingestion]   (raw envelopes, as-is)
-                   │
-                   └─► [Manage fields] ─► [Expand] ─► [Manage fields] ──┬─► [Group by 1-min] ─► [Eventhouse, processed]  (flat aggregate)
-                        pick the array      1 row     rename + type     │
-                                            per bus                     └─► [Filter: venue] ─► [Group by 1-min] ─► derived stream "ForumNextBus" ─► (Module 05)
+ [source] ──► default stream ──┬─► [destination: Eventhouse, direct ingestion]   (raw envelopes, as-is)
+                               │
+                               ├─► [Manage fields] ─► [Expand] ─► [Expand] ─► [Expand] ─► [Manage fields] ─► [Group by 1-min] ─► [Eventhouse, processed]
+                               │    pick arrays      stops        routes      buses       rename + type      min arrival instant    (flat aggregate)
+                               │
+                               └─► [SQL operator: flatten + (arrival − now) / 60000 + venue filter + 1-min window] ─► derived stream "ForumNextBus" ─► (Module 05)
 ```
 
-The middle of that picture is the lab's real content. The feed delivers **one envelope per API response**
-(`source`, `key`, `fetchedAt`, `payload`), and inside `payload` is TMB's JSON with an array of predictions. That's
-what most real APIs give you, and it is useless to a rule or a chart until each array element becomes its own flat,
-typed event. Eventstream does that with two operators: **Manage fields** to reach into the nested object and pick,
-rename and re-type fields, and **Expand** to turn one event holding an array of N into N events.
+The middle and bottom of that picture are the lab's real content. The feed delivers **one envelope per API
+response** (`source`, `key`, `fetchedAt`, `payload`), and inside `payload` is TMB's JSON: a stop, its lines, the
+next buses per line, three arrays deep, with arrival times as absolute epoch instants. That's what most real APIs
+give you, and it is useless to a rule or a chart until each innermost element becomes its own flat, typed event with
+a number a human cares about ("4 minutes"). Eventstream gives you two ways to get there: the no-code **Manage
+fields** (reach into nested objects; pick, rename, re-type) and **Expand** (one event holding an array of N becomes
+N events), which can flatten but can't subtract two fields; and the **SQL operator** (preview), which does the same
+flattening with `CROSS APPLY GetArrayElements()` and adds arithmetic, windows and filters in one query. The lab
+builds both, so you see the same result from clicks and from code.
 
 - **Source**: where events come from. Today: **Azure Event Hubs** (GA, the workhorse connector). The gallery has
   ~30 others: IoT Hub, Service Bus, Kafka, Pub/Sub, Kinesis, MQTT (preview), database CDC feeds, an **HTTP**
@@ -33,7 +38,9 @@ rename and re-type fields, and **Expand** to turn one event holding an array of 
   (pick nested fields, rename, remove, change type, add computed fields with built-in string/date/math functions
   such as `Left`, `Substring`, `Replace`, `RegExMatch`; no concatenation), **Expand** (one event per array element),
   **Filter**, **Aggregate**, **Group by** (aggregations over a time window, grouped by fields), **Union**, **Join**
-  (stream-to-stream), and a **SQL operator** (preview) when the no-code shapes aren't enough.
+  (stream-to-stream), and a **SQL operator** (preview; Stream Analytics SQL, so `GetArrayElements`, arithmetic,
+  `TumblingWindow`, `CASE`) when the no-code shapes aren't enough. The SQL operator runs alone in its path: it
+  can't be chained with the other operators, and it needs new destination nodes of its own.
 - **Derived stream**: the output of an operator chain published as a *named stream* of its own. It shows up in
   Real-Time hub, can be paused/resumed, and can be consumed by other destinations or other teams without them
   knowing how it was produced. Think "curated topic".
@@ -71,18 +78,23 @@ users 66–130 read `tmb-ibus-66-130` / `tmb-metro-66-130`; your seat sheet says
 ## What this morning's stream looks like
 
 ```json
-{ "source": "tmb.ibus", "key": "1497", "fetchedAt": "2026-09-30T07:15:02.123456+00:00",
-  "payload": { "status": "success", "data": { "ibus": [
-      { "line": "H16", "routeId": "1601", "destination": "Forum Campus Besos", "t-in-min": 4,  "t-in-s": 230, "text-ca": "4 min" },
-      { "line": "7",   "routeId": "701",  "destination": "Zona Universitaria", "t-in-min": 11, "t-in-s": 655, "text-ca": "11 min" },
-      { "line": "H16", "routeId": "1601", "destination": "Forum Campus Besos", "t-in-min": 13, "t-in-s": 790, "text-ca": "13 min" } ] } } }
+{ "source": "tmb.ibus", "key": "1265", "fetchedAt": "2026-09-23T08:47:01.741901+00:00",
+  "payload": { "timestamp": 1790153221713,
+    "parades": [ { "codi_parada": "1265", "nom_parada": "Pg de Sant Joan - Còrsega",
+      "linies_trajectes": [
+        { "nom_linia": "H8",  "codi_trajecte": "2081", "id_sentit": 2, "desti_trajecte": "Ernest Lluch",
+          "propers_busos": [ { "temps_arribada": 1790153253000, "id_bus": 6405 }, { "temps_arribada": 1790154085000, "id_bus": 6802 } ] },
+        { "nom_linia": "47",  "codi_trajecte": "0471", "id_sentit": 2, "desti_trajecte": "Pg. Marítim",
+          "propers_busos": [ { "temps_arribada": 1790153675000, "id_bus": 5426 }, { "temps_arribada": 1790154287000, "id_bus": 5010 } ] } ] } ] } }
 ```
 
-Three things to notice. It's **one event per stop**, not per bus: the buses are an array two levels down. The
-identifiers are **codes**: a stop number, a line name, no stop name, no coordinates. And the field names are TMB's,
-hyphens included (`t-in-min`). The lab turns this into `StopCode`, `LineCode`, `MinutesToArrival` events, and Module 03
-adds the meaning from reference tables. This afternoon Brian makes the same "codes and numbers tell you nothing"
-point about a `FreezerId` and a temperature; keep the parallel in mind.
+Three things to notice. It's **one event per stop**, not per bus: the buses are an array three levels down
+(`parades → linies_trajectes → propers_busos`). There is **no "minutes" anywhere**: `temps_arribada` is an epoch
+instant and so is TMB's `timestamp`; the wait is their difference. And apart from the stop's name, the identifiers
+are **codes**: a line name, a route id, no coordinates, no zone, no line origin/destination. The lab turns this into
+`StopCode`, `LineCode`, `MinutesToArrival` events, and Module 03 adds the meaning from reference tables. This
+afternoon Brian makes the same "codes and numbers tell you nothing" point about a `FreezerId` and a temperature;
+keep the parallel in mind.
 
 ## Live demo before the lab (5 minutes, instructor workspace)
 
@@ -90,17 +102,20 @@ Click through the lab path once, narrating the UI, before anyone touches their o
 
 1. Open the pre-built `BusArrivalsEventstream` in **Edit** mode. Point at the source node: "this is the Event
    Hubs connection; you'll type a namespace, the hub names from your sheet, the listen key, and *your* consumer group".
-2. **Data preview** on the stream node: expand one `payload` cell. "One event, one stop, five buses in an array.
-   No stop name. No coordinates. Field names with hyphens."
-3. Click the **Expand** node, then its **Test result**: "same data, one row per bus". Click the second **Manage
-   fields** node: show the nested picker (`Predictions → t-in-min`), a rename, a type change. "This is the whole
-   flattening job; you'll do it in three operators."
+2. **Data preview** on the stream node: expand one `payload` cell. "One event, one stop, three lines, six buses,
+   three arrays deep. Two epoch clocks and no minutes."
+3. Click the three **Expand** nodes in turn, **Test result** each time: "stops, then routes, then buses; the row
+   count grows at each step". Click the last **Manage fields** node: show the nested picker
+   (`Stops → linies_trajectes → propers_busos → temps_arribada`), a rename, a type change. "This is the whole
+   flattening job. What it can't do is subtract."
 4. Click the **Group by** node: aggregations, group-by fields, the tumbling window. "Nothing appears for a minute;
-   that's the window closing, not a bug. Minimum = the next bus."
-5. Click the two Eventhouse destinations: one **Direct ingestion** (raw envelopes, `payload` stays JSON), one
-   **Event processing before ingestion** (flat aggregate). Point at the table names.
-6. Switch to **Live** view: **Data insights** on a destination, and the **ForumNextBus** derived stream.
-   "That's what you build in the next 35 minutes."
+   that's the window closing, not a bug. Minimum arrival instant = the next bus."
+5. Open the **SQL operator**'s editor: point at the three `CROSS APPLY GetArrayElements` and at
+   `(ArrivalMs - PolledMs) / 60000.0`. "Same flattening, in code, plus the arithmetic. This is the branch the
+   alerts read from." Note it hangs directly off the stream.
+6. Click the two Eventhouse destinations: one **Direct ingestion** (raw envelopes, `payload` stays JSON), one
+   **Event processing before ingestion** (flat aggregate). Switch to **Live** view: **Data insights** on a
+   destination, and the **ForumNextBus** derived stream. "That's what you build in the next 35 minutes."
 
 > 🎤 Facilitator note: the one thing to protect in this theory slot is the direct-vs-processed table. Attendees
 > who pick the wrong mode in the lab lose ten minutes. The demo is not optional: with 120 people, five minutes of

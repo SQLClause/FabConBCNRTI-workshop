@@ -65,9 +65,9 @@ line per minute with the minimum, i.e. next-bus, prediction), object = `LineCode
 
 | Rule | Condition | Occurrence | Action |
 |---|---|---|---|
-| `Long wait at the Fòrum` | `MIN_MinutesToArrival` **Is greater than** `12` | **When it has been true for** `3 minutes` (three consecutive windows) | Email (Teams if available) |
+| `Long wait at the Fòrum` | `MinutesToArrival` **Is greater than** `12` | **When it has been true for** `3 minutes` (three consecutive windows) | Email (Teams if available) |
 | `Stop went silent` | **No presence of data** | `10 minutes` | Email |
-| `Bus arriving now` (optional) | `MIN_MinutesToArrival` **Decreases below** `2` | — | Teams/email |
+| `Bus arriving now` (optional) | `MinutesToArrival` **Decreases below** `2` | — | Teams/email |
 
 Why the stream is pre-aggregated: the raw feed has two predictions per line (next bus and the one after). A rule on
 the raw per-bus events would see the second bus's 15 minutes and cry wolf. Taking the **minimum per minute** in the
@@ -82,7 +82,7 @@ eventstream gives Activator one clean number per line. The alternative is Activa
 ## Live demo before the lab (4 minutes, instructor workspace)
 
 1. Open `TransitAlerts`. Select `Long wait at the Fòrum`: walk the **Definition** pane top to bottom: grouped
-   by `LineCode`, `MIN_MinutesToArrival` **Is greater than 12**, **When it has been true for 3 minutes**, the email
+   by `LineCode`, `MinutesToArrival` **Is greater than 12**, **When it has been true for 3 minutes**, the email
    action with `@LineCode` in the headline. Point at the chart with the threshold line.
 2. Open the **Analytics** tab: activations over time, per line.
 3. Show your inbox with the email the rule sent during the dry run.
