@@ -84,6 +84,17 @@ Confirm your environment matches this state before starting:
    every `lookup` in Part C return nulls, so don't skip this check.
    </details>
 
+   <details>
+   <summary>Troubleshooting — the lookups return empty <code>StopName</code>/<code>Zone</code> for every row</summary>
+
+   Check the left side first: `BusArrivalsRaw | top 5 by fetchedAt desc | mv-expand stop = payload.parades |
+   project key, StopCode = tolong(stop.codi_parada)`. If `key` is empty but `StopCode` has a value, the raw
+   table's `key` column was typed `long` in Lab 02 step 13 and ingests as null (the envelope sends it quoted).
+   Every query in this lab derives the stop code from `codi_parada` in the payload for exactly that reason, so
+   you can carry on; just don't use `key`. At night you'll also see `LineName` empty for `N`-lines: `LinesDim`
+   only lists the day lines.
+   </details>
+
    *Adapted from: [Get data from file](https://learn.microsoft.com/fabric/real-time-intelligence/get-data-local-file)*
 
 8. **Repeat** steps 5–7 for `lines.csv` → new table `LinesDim` (all columns string). **[metro]** Repeat for

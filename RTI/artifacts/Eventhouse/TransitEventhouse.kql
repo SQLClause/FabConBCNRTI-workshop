@@ -10,7 +10,10 @@
 // Tables that already exist by the time you run this (created by Lab 02's
 // Eventstream destinations):
 //   BusArrivalsRaw        - one row per TMB iTransit bus RESPONSE (raw envelope, direct ingestion):
-//                           source:string, key:long, fetchedAt:datetime, payload:dynamic
+//                           source:string, key:string, fetchedAt:datetime, payload:dynamic
+//                           (keep `key` as string: the envelope sends it quoted, and a long column
+//                            ingests it as null. The queries take the stop code from the payload's
+//                            parades[].codi_parada instead, so they don't depend on `key` at all.)
 //                           payload = { timestamp, parades[ { codi_parada, nom_parada,
 //                                       linies_trajectes[ { nom_linia, codi_trajecte, id_sentit, desti_trajecte,
 //                                       propers_busos[ { temps_arribada, id_bus } ] } ] } ] }
@@ -42,13 +45,13 @@ BusArrivalsRaw
 // A2. How fast is data arriving? Envelopes per minute (one per stop per poll)
 BusArrivalsRaw
 | where fetchedAt > ago(15m)
-| summarize Envelopes = count(), Stops = dcount(key) by bin(fetchedAt, 1m)
+| summarize Envelopes = count(), Stops = dcount(tostring(payload.parades[0].codi_parada)) by bin(fetchedAt, 1m)
 | render timechart
 
 // A3. Reach into the JSON with dot paths: TMB's clock, the stop name, how many lines serve the stop
 BusArrivalsRaw
 | where fetchedAt > ago(5m)
-| project fetchedAt, key,
+| project fetchedAt, StopCode = tolong(payload.parades[0].codi_parada),
           TmbTimestamp = unixtime_milliseconds_todatetime(tolong(payload.timestamp)),
           StopName = tostring(payload.parades[0].nom_parada),
           Routes = array_length(payload.parades[0].linies_trajectes)
@@ -62,7 +65,7 @@ BusArrivalsRaw
 | mv-expand stop = payload.parades
 | mv-expand route = stop.linies_trajectes
 | mv-expand bus = route.propers_busos
-| project PolledAtUtc = fetchedAt, TmbTimestamp, StopCode = tolong(key), StopName = tostring(stop.nom_parada),
+| project PolledAtUtc = fetchedAt, TmbTimestamp, StopCode = tolong(stop.codi_parada), StopName = tostring(stop.nom_parada),
           LineCode = tostring(route.nom_linia), Destination = tostring(route.desti_trajecte),
           PredictedArrivalUtc = unixtime_milliseconds_todatetime(tolong(bus.temps_arribada))
 | extend MinutesToArrival = round((PredictedArrivalUtc - TmbTimestamp) / 1m, 1)
@@ -74,7 +77,7 @@ BusArrivalsRaw
 | where fetchedAt > ago(15m)
 | mv-expand stop = payload.parades
 | mv-expand route = stop.linies_trajectes
-| summarize Observations = count(), Stops = dcount(key) by LineCode = tostring(route.nom_linia)
+| summarize Observations = count(), Stops = dcount(tostring(stop.codi_parada)) by LineCode = tostring(route.nom_linia)
 | order by Observations desc
 
 // A6. Local time, and the predicted arrival instant
@@ -84,7 +87,7 @@ BusArrivalsRaw
 | mv-expand route = stop.linies_trajectes
 | mv-expand bus = route.propers_busos
 | project PolledAtLocal = datetime_utc_to_local(fetchedAt, 'Europe/Madrid'),
-          StopCode = tolong(key), LineCode = tostring(route.nom_linia),
+          StopCode = tolong(stop.codi_parada), LineCode = tostring(route.nom_linia),
           PredictedArrivalLocal = datetime_utc_to_local(unixtime_milliseconds_todatetime(tolong(bus.temps_arribada)), 'Europe/Madrid')
 | top 20 by PolledAtLocal desc
 
@@ -100,7 +103,7 @@ BusArrivalsRaw
 StopsDim | take 20
 LinesDim | take 20
 
-// B2. Type check -- the join key must be long on the dimension side (we tolong(key) on the fact side)
+// B2. Type check -- the join key must be long on the dimension side (we tolong(stop.codi_parada) on the fact side)
 StopsDim | getschema | where ColumnName == "StopCode"
 
 // B3. If StopsDim.StopCode landed as string, fix it with a typed copy:
@@ -113,7 +116,7 @@ BusArrivalsRaw
 | mv-expand stop = payload.parades
 | mv-expand route = stop.linies_trajectes
 | mv-expand bus = route.propers_busos
-| project PolledAtUtc = fetchedAt, StopCode = tolong(key), LineCode = tostring(route.nom_linia),
+| project PolledAtUtc = fetchedAt, StopCode = tolong(stop.codi_parada), LineCode = tostring(route.nom_linia),
           Destination = tostring(route.desti_trajecte),
           MinutesToArrival = round((unixtime_milliseconds_todatetime(tolong(bus.temps_arribada)) - TmbTimestamp) / 1m, 1)
 | lookup kind=leftouter StopsDim on StopCode
@@ -165,7 +168,7 @@ EnrichBusArrivals() {
     | mv-expand route = stop.linies_trajectes
     | mv-expand bus = route.propers_busos
     | project PolledAtUtc, TmbTimestamp,
-              StopCode = tolong(key),
+              StopCode = tolong(stop.codi_parada),
               StopNameTmb = tostring(stop.nom_parada),
               LineCode = tostring(route.nom_linia),
               RouteId = tostring(route.codi_trajecte),

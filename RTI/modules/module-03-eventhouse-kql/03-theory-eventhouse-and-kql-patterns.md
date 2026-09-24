@@ -78,7 +78,7 @@ BusArrivalsRaw
 | mv-expand stop = payload.parades
 | mv-expand route = stop.linies_trajectes
 | mv-expand bus = route.propers_busos
-| project PolledAtUtc = fetchedAt, StopCode = tolong(key), LineCode = tostring(route.nom_linia),
+| project PolledAtUtc = fetchedAt, StopCode = tolong(stop.codi_parada), LineCode = tostring(route.nom_linia),
           MinutesToArrival = (unixtime_milliseconds_todatetime(tolong(bus.temps_arribada)) - TmbTimestamp) / 1m
 | lookup kind=leftouter StopsDim on StopCode
 | lookup kind=leftouter LinesDim on LineCode

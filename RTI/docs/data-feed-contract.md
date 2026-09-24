@@ -162,7 +162,7 @@ These names are used verbatim in every lab, KQL statement, dashboard query and A
 |---|---|---|---|
 | `PolledAtUtc` | datetime | `fetchedAt` | all |
 | `TmbTimestamp` | datetime | `payload.timestamp` (epoch ms) | KQL (`PolledMs` as raw epoch in the no-code stream) |
-| `StopCode` | long | `tolong(key)` | all; join key to `StopsDim` |
+| `StopCode` | long | `parades[].codi_parada` (KQL: `tolong(stop.codi_parada)`; SQL operator: `TRY_CAST(e.[key] AS bigint)`) | all; join key to `StopsDim`. Not `key` in KQL: the envelope's `key` is a quoted string, and a raw column typed `long` ingests it as null |
 | `StopName` | string | `parades[].nom_parada` (KQL prefers `StopsDim.StopName`, falls back to it) | all |
 | `LineCode` | string | `linies_trajectes[].nom_linia` | all; join key to `LinesDim`; `H8`, `47`, `V19` |
 | `LineFamily` | string | `Left(LineCode, 1)` | no-code stream only; `H`/`V`/`D` orthogonal network, digit = trunk |

@@ -132,7 +132,7 @@ Confirm your environment matches this state before starting:
     | Column | Type |
     |---|---|
     | `source` | `string` |
-    | `key` | `long` |
+    | `key` | `string` (**not** `long`: the envelope sends it quoted, and a numeric column ingests it as null) |
     | `fetchedAt` | `datetime` |
     | `payload` | `dynamic` |
 
