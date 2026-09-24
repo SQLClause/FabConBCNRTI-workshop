@@ -48,7 +48,7 @@ Confirm your environment matches this state before starting:
    - **Connection name**: `tmb-ibus-listen`
    - **Authentication kind**: **Shared Access Key**
    - **Shared Access Key Name**: `attendee-listen`
-   - **Shared Access Key**: **paste** the key from the facilitator's slide
+   - **Shared Access Key**: `hmUG6ik4kG63LStmc4uKY6EX/DoCsTQ1e+AEhAypPIg=`
    - **Click** **Connect**.
 
    ![Step 5](../../assets/screenshots/lab-02/step-02.png)
@@ -141,14 +141,15 @@ Confirm your environment matches this state before starting:
 
     > ✅ Expected result: back in Live view the Eventhouse node reads **BusArrivalsRaw** with a green status.
 
-    *Adapted from: [Add an Eventhouse destination — Direct ingestion](https://learn.microsoft.com/fabric/real-time-intelligence/event-streams/add-destination-kql-database#direct-ingestion-mode)*
 
 ### Part C — Operators: flatten, filter, aggregate, and a derived stream
 
 15. **Click** **Edit** on the ribbon to return to Edit mode.
 
-16. We want a *second* branch off the stream (the raw destination stays as it is), so **hover** over the
-    **BusArrivalsEventstream-stream** node itself, **click** its **+**, and **select** **Manage fields**.
+16. We want a *second* branch off the stream (the raw destination stays as it is), so **click** on the
+    **Transform events** button above the stream and **select** **Manage fields** from the side bar menu.
+    Drag the box so it aligns with the **BusArrivalsRaw** box. Then **click** on the **BusArrivalsEventstream** right 
+    side connection port and drag a connection to the **Transform events** to connect the two.
 
 17. In the **Manage fields** pane, **Operation name** `PickPredictions`. **Click** **Add field** three times:
     - `key` — keep the name
