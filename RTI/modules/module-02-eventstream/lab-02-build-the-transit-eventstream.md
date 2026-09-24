@@ -4,7 +4,7 @@
 **Prerequisites:** Module 01 complete. `RTI Transit` contains `TransitEventhouse` (with its default KQL
 database) and `TransitLakehouse`. You have the four values from the facilitator's seat sheet: Event Hubs
 **namespace name**, **your two hub names** (`tmb-ibus-1-65` + `tmb-metro-1-65`, or `tmb-ibus-66-130` +
-`tmb-metro-66-130`), the **`attendee-listen`** shared access key: **hmUG6ik4kG63LStmc4uKY6EX/DoCsTQ1e+AEhAypPIg=**, and **your** consumer group `user-NNN`.
+`tmb-metro-66-130`), the **`attendee-listen`** shared access key: `hmUG6ik4kG63LStmc4uKY6EX/DoCsTQ1e+AEhAypPIg=`, and **your** consumer group `user-NNN`.
 
 **Learning objectives**
 - Connect an eventstream to an Azure Event Hubs source with a shared-access key and a dedicated consumer group.
