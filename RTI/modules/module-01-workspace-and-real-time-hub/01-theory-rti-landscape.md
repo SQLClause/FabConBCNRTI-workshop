@@ -28,9 +28,11 @@ Three points worth saying out loud:
    Fabric events (OneLake, job, workspace item, capacity), Azure events (Blob Storage), and the connector
    gallery. Every "Connect to data source" you start from the hub ends up creating an Eventstream in a
    workspace you pick.
-3. **Capacity.** Every item above runs on the capacity behind the workspace. This morning each of you runs two
-   eventstreams, an Eventhouse and a dashboard; this afternoon Ontology and Data Agent run on the *same*
-   capacity, which is why Module 07 pauses the streams.
+3. **Capacity.** Every item above runs on the capacity behind the workspace: a **P1**, shared with the other attendees
+   assigned to it. This morning each of you runs two eventstreams, an Eventhouse and a dashboard; this afternoon
+   Ontology and Data Agent run on the *same* capacity, which is why Module 07 pauses the streams. When a capacity
+   is over its limit, Fabric pauses eventstreams rather than slowing them, so "my stream stopped" is a capacity
+   symptom before it's a bug.
 
 ## Why a Lakehouse in an RTI workshop
 

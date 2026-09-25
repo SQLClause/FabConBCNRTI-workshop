@@ -30,7 +30,8 @@ itself. That's the pattern; the components are just how Fabric spells it.
 
 ## Park your workspace (required, 3 minutes)
 
-The afternoon's Ontology and Data Agent labs run on the **same capacity** as this workspace. Idle streams
+The afternoon's Ontology and Data Agent labs run on the **same P1 capacity** as this workspace, shared with the
+other attendees on it, and a P1 can't be resized on the day. Idle streams
 and a live-refreshing dashboard keep consuming it. Do these now:
 
 1. **Open** `BusArrivalsEventstream` (Live view). **Click** the Event Hubs source node **TMBBusArrivals** and

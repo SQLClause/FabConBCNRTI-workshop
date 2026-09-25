@@ -14,11 +14,20 @@ needs a tenant-admin action beyond what that checklist already covers.
 
 ## 2. Confirm with Microsoft ahead of time (presenter action, 2+ weeks lead time)
 
-- [ ] Capacity headroom: each attendee runs two Eventstreams, one Eventhouse, one Activator and one Real-Time
-      Dashboard with live refresh for ~3 hours, on the **same** per-attendee capacity the afternoon needs for
-      Ontology + Data Agent. Module 07's "park your workspace" step pauses the streams before lunch precisely
-      so the afternoon isn't throttled. If Microsoft assigns one *shared* capacity for the room instead of one
-      per attendee, ask for at least an F64 for the day.
+- [ ] **Capacity: attendees are on P1 capacities (Premium, the equivalent of an F64 = 64 CU), shared by a group of
+      attendees each, and P SKUs cannot be paused or resized on the day.** Confirm with Microsoft **how many
+      attendees share each P1**; that number is the one that matters. Each attendee runs two Eventstreams (one with
+      a five-operator branch and a SQL operator), one Eventhouse with an update policy, one Activator and one
+      Real-Time Dashboard with live refresh for ~3 hours, and the afternoon's Ontology + Data Agent run on the
+      same capacities. Eventstream processing draws capacity units continuously, and **when a capacity is
+      throttled Fabric pauses the eventstream instead of slowing it, and does not resume it by itself** (seen
+      during this half's dry run on an F16 shared with another workspace: the eventstream stopped,
+      `BusWaitByStopMinute` went stale, and it had to be resumed by hand). Before the event, run one attendee's
+      full build on a P1 with the Capacity Metrics app open, read the per-item CU, multiply by the attendees per
+      capacity, and compare with 64 CU. If it's tight, the levers in order: drop the metro eventstream (Lab 02
+      Part E) to a presenter demo, keep the raw table on queued ingestion (Lab 03 C3a already does this), turn on
+      dashboard live refresh only in Module 04, and enforce Module 07's "park your workspace" step (pausing every
+      attendee's eventstreams and rules before lunch) so the afternoon has the CU it needs.
 
 ## 3. Presenter-owned infrastructure (must be running before the session)
 

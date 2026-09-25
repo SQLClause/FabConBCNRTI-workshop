@@ -217,8 +217,10 @@ EnrichBusArrivals() {
 .alter table BusArrivalsEnriched policy update
 @'[{ "IsEnabled": true, "Source": "BusArrivalsRaw", "Query": "EnrichBusArrivals()", "IsTransactional": false, "PropagateIngestionProperties": false }]'
 
-// C4. One-time backfill of what arrived before the policy existed (small data, fine to do inline)
-.set-or-append BusArrivalsEnriched <| EnrichBusArrivals()
+// C4. One-time backfill of what arrived before the policy existed. Limited to the last 30 minutes on
+//     purpose: 120 attendees running a whole-table backfill in the same minute is a capacity spike we don't need,
+//     and nothing downstream wants older rows anyway.
+.set-or-append BusArrivalsEnriched <| EnrichBusArrivals() | where PolledAtUtc > ago(30m)
 
 // C5. Verify: new rows keep appearing on their own within a minute or two
 BusArrivalsEnriched

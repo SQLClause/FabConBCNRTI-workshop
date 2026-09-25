@@ -63,9 +63,10 @@ should make so the two halves tell one story.
    live vs. is picking up mid-day". Keep it; RTI Module 07's wrap-up tells attendees to keep the `RTI Transit`
    workspace but **pause** its eventstreams so the IQ labs aren't starved of capacity. Brian may want to
    re-check that in his Module 00 Part B ("if your two morning eventstreams are still running, pause them").
-5. **`prerequisites/PREREQUISITES.md` §1 (capacity)**: the same per-attendee capacity carries both halves. If
-   Microsoft confirms F2 per attendee, that's fine *provided* the morning's streams are paused before the
-   Ontology/Data Agent labs. Worth one sentence there, pointing at RTI Module 07.
+5. **`prerequisites/PREREQUISITES.md` §1 (capacity)**: attendees are on shared **P1** capacities (F64-equivalent,
+   not pausable) that carry both halves. Brian's text says "F2 SKU or higher (or P1+)", which P1 satisfies, but the
+   real question is how many attendees share one P1 with two eventstreams each running in the morning and
+   Ontology/Data Agent in the afternoon. Worth one sentence there, pointing at RTI Module 07's parking step.
 6. **`04-theory-agent-patterns.md`** describes Operations Agent as *"the direct bridge from RTI to IQ … takes the
    live telemetry Eventstream/Eventhouse pattern you already know from Johan's session"*. Accurate; no change.
    RTI Module 07 seeds this with one sentence so the phrase lands.
@@ -75,6 +76,11 @@ should make so the two halves tell one story.
 
 ## E. Things that are shared and must stay in sync
 
+- **Capacity is the shared risk.** During the RTI dry run an attendee build on an **F16 shared with another workspace** hit throttling
+  and Fabric paused the eventstream until it was resumed by hand. The shared P1 capacities carry Brian's Ontology and Data Agent in the afternoon,
+  so one P1 needs a dry run with one full RTI build *and* the IQ provisioning on it, scaled by the number of
+  attendees per capacity, and Module 07's parking step is not optional. Whoever talks to Microsoft about capacity should bring both halves'
+  numbers.
 - **Room size is 120.** The IQ half's Module 00 has everyone run `pip install` and `fab auth login` at once; with
   120 laptops on venue Wi-Fi that 40-minute block is the day's biggest network risk. Worth Brian knowing the count
   and considering a "pre-install over lunch" nudge; RTI's prerequisites already point attendees at his §4 for that.

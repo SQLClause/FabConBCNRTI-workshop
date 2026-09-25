@@ -155,10 +155,12 @@ Confirm your environment matches this state before starting:
 
 14. **Paste** and **run** **C3b** (attach the update policy), then **immediately** **C4** (backfill).
 
-    > ✅ Expected result: C3b returns one row describing the policy. C4 returns an ingestion summary. From this
-    > moment, every batch of envelopes that lands in `BusArrivalsRaw` is flattened and enriched into
-    > `BusArrivalsEnriched` by the engine, with no eventstream change and no schedule. (A handful of rows ingested
-    > in the seconds between C3b and C4 may appear twice; harmless for everything downstream.)
+    > ✅ Expected result: C3b returns one row describing the policy. C4 returns an ingestion summary; it backfills
+    > only the last 30 minutes, which is all the dashboard and alerts care about (and keeps 120 simultaneous
+    > backfills from spiking the capacity). From this moment, every batch of envelopes that lands in
+    > `BusArrivalsRaw` is flattened and enriched into `BusArrivalsEnriched` by the engine, with no eventstream
+    > change and no schedule. (A handful of rows ingested in the seconds between C3b and C4 may appear twice;
+    > harmless for everything downstream.)
 
     *Adapted from: [Update policy](https://learn.microsoft.com/kusto/management/update-policy)*
 

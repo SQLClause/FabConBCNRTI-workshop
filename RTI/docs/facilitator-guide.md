@@ -69,6 +69,13 @@ See [`risk-fallback-plan.md`](risk-fallback-plan.md). Short version:
 
 - **No events in data preview for the whole room** → your feed is down. Start `replay_events.py` from the
   presenter laptop; attendees change nothing.
+- **An eventstream shows paused or its destinations stop filling, and the capacity is busy** → capacity
+  throttling. Fabric pauses eventstream processing when the capacity is over its limit and **does not resume it by itself**
+  (dry run on a shared F16: manual Resume was needed). Recovery: open the eventstream in Live view, check each source/destination node's status,
+  and **Resume** whatever is paused (pick **Now** when asked where to resume from). Then reduce load: pause the
+  metro eventstream for anyone who built it, stop unneeded Activator rules, and close dashboard tabs. If half the
+  room is affected, too many attendees share one P1 and it can't be resized on the day: pause the metro
+  eventstreams room-wide and turn off dashboard live refresh; see `prerequisites/PREREQUISITES.md` §2.
 - **No events for one attendee** → wrong consumer group, wrong hub name, or wrong key. 90% of cases are a
   trailing space in the shared access key, the other user range's hub (their consumer group only exists on their
   own hubs), or someone typing `$Default` (which works for exactly one person per hub and then kicks others off).
@@ -101,6 +108,6 @@ See [`risk-fallback-plan.md`](risk-fallback-plan.md). Short version:
 ## Handoff to the afternoon
 
 Module 07's wrap-up (10 min) has attendees pause both eventstreams and stop `TransitAlerts` rules so the
-per-attendee capacity is free for Ontology/Data Agent. Tell Brian how many attendees were in the room and
+shared P1 capacities have their CU free for Ontology/Data Agent. Tell Brian how many attendees were in the room and
 whether anyone is on a shared capacity. See [`alignment-with-fabric-iq.md`](alignment-with-fabric-iq.md) §D for
 the wording edits the IQ half should make so its "this morning you built…" lines are accurate.
