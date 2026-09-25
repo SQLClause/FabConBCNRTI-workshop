@@ -39,6 +39,12 @@ Confirm your environment matches this state before starting:
 
    > ✅ Expected result: a query editor opens attached to the `TransitEventhouse` database, tables listed on the left.
 
+   > ℹ️ **Run one statement at a time.** The editor runs the blank-line-separated block your cursor is in. Pasting
+   > two statements together (for example both `.show` commands of C6) and running them as one fails with
+   > `Syntax error: A recognition error occurred.` Every statement in the script is separated by a blank line; put
+   > the cursor inside it and press **Run** (or Shift+Enter). F3 is the one multi-line exception: its `let` lines
+   > and the `union` are a single query.
+
 2. **Paste** and **run** query **A1** from the KQL script (latest 5 envelopes), then **A2** (envelopes per minute).
 
    > ✅ Expected result: A1 shows four columns: `source`, `key`, `fetchedAt`, and `payload`, the last one TMB's
@@ -126,18 +132,39 @@ Confirm your environment matches this state before starting:
     > ✅ Expected result: `EnrichBusArrivals` appears under **Functions** (folder `Enrichment`). **Run**
     > `EnrichBusArrivals() | where Rank == 2 | take 5` to prove it behaves like a table and that `Rank` works.
 
-13. **Paste** and **run** **C3** (attach the update policy), then **immediately** **C4** (backfill).
+13. **Paste** and **run** **C3a**: the two `.alter … policy` commands that switch `BusArrivalsRaw` from streaming to
+    queued ingestion with a 10-second batching window, then the two `.show … policy` commands.
 
-    > ✅ Expected result: C3 returns one row describing the policy. C4 returns an ingestion summary. From this
+    > ✅ Expected result: `.show table BusArrivalsRaw policy streamingingestion` shows `"IsEnabled": false` and the
+    > batching policy shows `00:00:10`. Why this step exists: Kusto only lets an update policy reference *other*
+    > tables (our two `lookup`s) when the source table is on queued ingestion, and the Eventstream destination
+    > switched `BusArrivalsRaw` to streaming ingestion. Queued means events land in 10–20 seconds instead of ~1;
+    > nothing in the rest of the morning notices, and it's the trade-off every production Eventhouse makes when
+    > it enriches at ingestion time. `BusWaitByStopMinute` and `MetroArrivalsRaw` are untouched.
+
+    <details>
+    <summary>Troubleshooting — C3b fails with "Referencing additional tables from update policy is not allowed when streaming ingestion is enabled"</summary>
+
+    You skipped C3a, or ran it against the wrong table. Run C3a again, confirm with the `.show` commands, then
+    re-run C3b. The error is permanent-looking but the fix is instant.
+    </details>
+
+    *Adapted from: [Streaming ingestion policy](https://learn.microsoft.com/kusto/management/show-table-streaming-ingestion-policy-command),
+    [Ingestion batching policy](https://learn.microsoft.com/kusto/management/batching-policy),
+    [Update policy restrictions](https://learn.microsoft.com/kusto/management/update-policy#limitations)*
+
+14. **Paste** and **run** **C3b** (attach the update policy), then **immediately** **C4** (backfill).
+
+    > ✅ Expected result: C3b returns one row describing the policy. C4 returns an ingestion summary. From this
     > moment, every batch of envelopes that lands in `BusArrivalsRaw` is flattened and enriched into
     > `BusArrivalsEnriched` by the engine, with no eventstream change and no schedule. (A handful of rows ingested
-    > in the seconds between C3 and C4 may appear twice; harmless for everything downstream.)
+    > in the seconds between C3b and C4 may appear twice; harmless for everything downstream.)
 
     *Adapted from: [Update policy](https://learn.microsoft.com/kusto/management/update-policy)*
 
-14. **Wait** about a minute, then **run** **C5** twice, 30 seconds apart.
+15. **Wait** about a minute, then **run** **C5** twice, 30 seconds apart.
 
-    ![Step 14](../../assets/screenshots/lab-03/step-03.png)
+    ![Step 15](../../assets/screenshots/lab-03/step-03.png)
 
     > ✅ Expected result: `BusArrivalsEnriched` has fresh rows each time, one per bus, each carrying `StopName`,
     > `Zone`, `LineName`, `Rank` and `PredictedArrivalUtc`. You didn't write a pipeline; the database is doing it
@@ -153,20 +180,20 @@ Confirm your environment matches this state before starting:
 
 ### Part D — Author the materialized view
 
-15. **Paste** and **run** the `.create-or-alter materialized-view` statement in **Part D**.
+16. **Paste** and **run** the `.create-or-alter materialized-view` statement in **Part D**.
 
     > ✅ Expected result: `BusNextArrivalLatest` appears under **Materialized views**. With `backfill = true` it
     > is populated from existing rows within a minute or so.
 
     *Adapted from: [Create materialized view](https://learn.microsoft.com/kusto/management/materialized-views/materialized-view-create)*
 
-16. **Run** **D1**, then **D2**.
+17. **Run** **D1**, then **D2**.
 
     > ✅ Expected result: D1 shows exactly one row per stop/line combination (no duplicates, unlike the raw
     > table), ordered by wait. D2 shows the venue's next buses with an `AgeSeconds` column under ~60. That's
     > "what's the wait right now?" as a table you can point a dashboard or an alert at.
 
-17. **Run** **D3**.
+18. **Run** **D3**.
 
     > ✅ Expected result: `IsHealthy = true`, `Status = Active`, and a recent `LastRun`.
 
@@ -176,7 +203,7 @@ Confirm your environment matches this state before starting:
 
 ### Part E — Save the analysis queries
 
-18. **Paste** each of **E1**–**E5** into its own tab in `TransitQueries` (the **+** next to the tab strip) and
+19. **Paste** each of **E1**–**E5** into its own tab in `TransitQueries` (the **+** next to the tab strip) and
     **run** them. **Rename** the tabs (right-click → **Rename**): `Avg wait by line`, `Wait from aggregate`,
     `Bunching`, `Longest wait map`, `Freshness`.
 
@@ -191,13 +218,13 @@ Confirm your environment matches this state before starting:
     > - **E4** has `Lat`/`Lon` for every row: the map tile's input.
     > - **E5** shows every stop with `SilentForMin` near 0 or 1.
 
-19. **Click** **Save** on the queryset.
+20. **Click** **Save** on the queryset.
 
     *Adapted from: [KQL Queryset](https://learn.microsoft.com/fabric/real-time-intelligence/kusto-query-set)*
 
 ### Part F — Stretch: four nested arrays, the interchange question, and OneLake availability
 
-20. **[metro]** **Paste** and **run** **F1**: the `MetroArrivalsFlat()` function. **Count** the `mv-expand`s: four,
+21. **[metro]** **Paste** and **run** **F1**: the `MetroArrivalsFlat()` function. **Count** the `mv-expand`s: four,
     one per nesting level of TMB's metro payload (`linies → estacions → linies_trajectes → propers_trens`). Note
     `unixtime_milliseconds_todatetime()` for the epoch timestamps, and that `SecondsToArrival` is computed against
     TMB's own `timestamp`, not ours.
@@ -205,14 +232,14 @@ Confirm your environment matches this state before starting:
     > ✅ Expected result: `MetroArrivalsFlat` appears under **Functions**. **Run** `MetroArrivalsFlat() | take 10`:
     > one row per station × track × route × upcoming train, with `Rank` 1 and 2.
 
-21. **[metro]** **Run** **F2** (next train per station/direction), then **F3** (the interchange question).
+22. **[metro]** **Run** **F2** (next train per station/direction), then **F3** (the interchange question).
 
     > ✅ Expected result: F3 returns one short table for the venue: bus lines and metro directions mixed, sorted by
     > wait. "Bus or metro first?" answered from two APIs with different shapes, joined on nothing but the venue.
     > Skip if you didn't do Lab 02 Part D. (F5 in the script is the homework: make F1 a permanent table with an
     > update policy, exactly like Part C.)
 
-22. **Go back** to the **TransitEventhouse** database page, **click** the **OneLake availability** toggle in
+23. **Go back** to the **TransitEventhouse** database page, **click** the **OneLake availability** toggle in
     the database details (or **…** on `BusArrivalsEnriched` → **Data policies** → **OneLake availability**) and
     **turn it on**. **Click** **Done**.
 

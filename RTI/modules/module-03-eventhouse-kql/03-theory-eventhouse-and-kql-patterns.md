@@ -28,7 +28,7 @@ view), not an in-place overwrite.
 |---|---|---|
 | **Table** | Append-only columns | `StopsDim`, `LinesDim` (loaded from CSV), `BusArrivalsEnriched` (target) |
 | **Function** | Named, parameter-less query you can call like a table | `EnrichBusArrivals()` : `BusArrivalsRaw` → `mv-expand` → `lookup` to the dimensions |
-| **Update policy** | "When a batch lands in *source*, run *function* and append the result to *target*". Runs per ingestion batch, at ingestion time. | `BusArrivalsRaw` → `EnrichBusArrivals()` → `BusArrivalsEnriched` |
+| **Update policy** | "When a batch lands in *source*, run *function* and append the result to *target*". Runs per ingestion batch, at ingestion time. One rule to know: if the function reads *other* tables (our `lookup`s), the source table must be on **queued** ingestion, not streaming; the lab flips that switch (a 10-second batching window) before attaching the policy. | `BusArrivalsRaw` → `EnrichBusArrivals()` → `BusArrivalsEnriched` |
 | **Materialized view** | A `summarize` over a table, kept up to date in the background. Query it like a table; it returns the materialized part plus a fresh delta. | `BusNextArrivalLatest = arg_max(PolledAtUtc, *) by StopCode, LineCode` |
 
 ### Update policy vs materialized view, in one sentence each

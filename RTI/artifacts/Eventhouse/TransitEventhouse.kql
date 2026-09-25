@@ -2,10 +2,15 @@
 // TransitEventhouse.kql
 //
 // Every KQL statement Lab 03 has attendees paste, in order, plus the analysis
-// queries. Run section by section in a KQL Queryset attached to
-// TransitEventhouse > TransitEventhouse (the default database). Every
-// management command uses an idempotent form (.create-merge / .create-or-alter)
-// so re-running a section is safe.
+// queries. Run in a KQL Queryset attached to TransitEventhouse > TransitEventhouse
+// (the default database). Every management command uses an idempotent form
+// (.create-merge / .create-or-alter) so re-running a section is safe.
+//
+// RUN ONE STATEMENT AT A TIME. The KQL editor executes the blank-line-separated
+// block under the cursor; two statements in one block fail with
+// "Syntax error: A recognition error occurred." Every statement below is its own
+// block -- put the cursor in it and press Run (or Shift+Enter). The only exception
+// is F3, whose `let` lines and `union` are one query and stay together on purpose.
 //
 // Tables that already exist by the time you run this (created by Lab 02's
 // Eventstream destinations):
@@ -101,6 +106,7 @@ BusArrivalsRaw
 
 // B1. Verify
 StopsDim | take 20
+
 LinesDim | take 20
 
 // B2. Type check -- the join key must be long on the dimension side (we tolong(stop.codi_parada) on the fact side)
@@ -189,9 +195,25 @@ EnrichBusArrivals() {
               Rank, MinutesToArrival, SecondsToArrival
 }
 
-// C3. Attach the policy. From now on every batch landing in BusArrivalsRaw is flattened, computed and
-//     enriched into BusArrivalsEnriched at ingestion time. A batch is one poll cycle, so the row_number()
-//     partitioning in C2 sees every prediction of a stop/line together.
+// C3a. Switch the source table to QUEUED ingestion. Kusto only allows an update policy to reference other
+//      tables (our two lookups) when the source table is NOT on streaming ingestion, and the Eventstream
+//      destination enabled streaming on BusArrivalsRaw. Without this, C3b fails with
+//      "Referencing additional tables from update policy is not allowed when streaming ingestion is enabled".
+//      Queued ingestion batches by time/size; a 10-second window keeps the feed feeling live
+//      (~1 s -> ~10-20 s latency) while making the policy chain legal. This is the same trade-off every
+//      production Eventhouse makes when it enriches at ingestion time.
+.alter-merge table BusArrivalsRaw policy streamingingestion '{"IsEnabled": false}'
+
+.alter table BusArrivalsRaw policy ingestionbatching '{"MaximumBatchingTimeSpan": "00:00:10", "MaximumNumberOfItems": 1000, "MaximumRawDataSizeMB": 1024}'
+
+// Verify both took:
+.show table BusArrivalsRaw policy streamingingestion
+
+.show table BusArrivalsRaw policy ingestionbatching
+
+// C3b. Attach the policy. From now on every batch landing in BusArrivalsRaw is flattened, computed and
+//      enriched into BusArrivalsEnriched at ingestion time. A batch is one poll cycle (or a 10-second
+//      window of them), so the row_number() partitioning in C2 sees every prediction of a stop/line together.
 .alter table BusArrivalsEnriched policy update
 @'[{ "IsEnabled": true, "Source": "BusArrivalsRaw", "Query": "EnrichBusArrivals()", "IsTransactional": false, "PropagateIngestionProperties": false }]'
 
@@ -204,6 +226,7 @@ BusArrivalsEnriched
 
 // C6. Inspect the policy and any failures
 .show table BusArrivalsEnriched policy update
+
 .show ingestion failures | where Table == "BusArrivalsEnriched" | top 10 by FailedOn desc
 
 
@@ -237,6 +260,7 @@ BusNextArrivalLatest
 
 // D3. View health
 .show materialized-view BusNextArrivalLatest
+
 .show materialized-view BusNextArrivalLatest details
 
 
@@ -259,6 +283,7 @@ BusWaitByStopMinute
 | extend WaitMin = (unixtime_milliseconds_todatetime(MIN_ArrivalMs) - Window_End_Time) / 1m
 | summarize AvgWaitMin = avg(WaitMin) by bin(Window_End_Time, 5m), LineCode
 | render timechart
+
 // (column names follow the Group-by operator's convention: MIN_<field>, COUNT_<field>, Window_End_Time;
 //  check with:  BusWaitByStopMinute | getschema )
 
