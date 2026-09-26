@@ -47,7 +47,7 @@ You know your own email address on the event account (and whether Teams is avail
    **Open in Activator** so you get the full editor (the in-pane form is fine for simple rules, but we want an
    occurrence setting and the analytics).
 
-5. First the **object**, then the rule. In the Activator editor's **Explorer**, **select** the **ForumNextBus**
+5. In the Activator editor's **Explorer**, **select** the **ForumNextBus**
    stream and **click** **New object** (ribbon). In the pane:
    - **Object name**: `VenueLine`
    - **Object ID** (the field that identifies one instance): `LineCode`
