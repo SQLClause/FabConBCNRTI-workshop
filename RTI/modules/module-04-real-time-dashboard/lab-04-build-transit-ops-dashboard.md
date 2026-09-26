@@ -121,9 +121,9 @@ and `TransitQueries` holds the saved E-queries. Tile queries are also collected 
 
     *Adapted from: [Enable live refresh](https://learn.microsoft.com/fabric/real-time-intelligence/dashboard-real-time-create#enable-live-refresh)*
 
-### Part F — Optional: KPI tile and an alert from a tile
+### Part F — Optional: Table tile and an alert from a tile
 
-11. **New visual**, **paste** **T4**, **Visual type** **KPI** (mode **Number**), thresholds **Good** `< 2`,
+11. **New visual**, **paste** **T4**, **Visual type** **Table** (mode **Number**), thresholds **Good** `< 2`,
     **Warning** `2–4`, **Critical** `> 4`, **Higher is worse**. **Rename** to `Stops with a long wait`:
 
     ```kql
