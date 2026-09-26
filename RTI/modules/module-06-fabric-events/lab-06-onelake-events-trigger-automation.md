@@ -59,24 +59,36 @@
 
 6. In the **Add rule** pane, **Details** → **Rule name**: `Reference file landed`.
 
-7. **Monitor** → **Source** → **Select source events**. In the wizard:
-   - **Event types**: **select only** `Microsoft.Fabric.OneLake.FileCreated`
-   - **Click** **Add a OneLake source** → **My data** → **select** `TransitLakehouse` → **Next** → **select all**
-     (or the **Files** entry) → **Add**
-   - On **Configure connection settings**, **click** **+ Filter**: **field** `subject`, **operator** *contains*
-     (labelled **String contains** in some tenants), **value** `Files/reference/`
+7. **Monitor** → **Source** → **Select source events**. The **Connect data source** wizard opens on its
+   **Configure** page (**OneLake events → Set alert** shown at the top):
+   - **Select event type(s)**: **select only** `Microsoft.Fabric.OneLake.FileCreated`
+   - **Select data source for events**: **Add a OneLake source** → **My data** → **select** `TransitLakehouse` →
+     **Next** → **select all** (or the **Files** entry) → **Add**. `TransitLakehouse` now shows under the heading
+     with "(1 selected)".
+   - **Set filters** → **+ Filter**: **Field** `subject`, **Operator** **String contains**, **Value**: **type**
+     `Files/reference/` and **click** **Add new value**
    - **Next** → **Review + connect** → **Save**
 
-   > ✅ Expected result: the **Monitor** section now names the OneLake source with one event type and one filter.
+   > ✅ Expected result: back in **Add rule**, the **Monitor** section reads **Source: OneLake events**, and
+   > **Show event types** / **Show applied filters** expand to the one type and the one filter you set.
 
    > ℹ️ Don't filter on `contentLength > 0`: portal uploads can emit events with `contentLength = 0`.
 
    *Adapted from: [Set alerts on OneLake events in Real-Time hub](https://learn.microsoft.com/fabric/real-time-hub/set-alerts-fabric-onelake-events)*
 
-8. **Condition** → **Check**: **On each event**.
+8. **Condition** → **Check**: **On each event**. Every `FileCreated` event that survived the filter should trigger
+   the run, so no grouping and no value test are needed.
 
-9. **Action** → **Select action** → under **Run Fabric activities** **select** **Notebook** → **Select Fabric item
-   to run** → `LoadStopsReference`. (No parameters.)
+   <details>
+   <summary>If the Check dropdown only offers "On each event when"</summary>
+
+   Then a field test is mandatory: **Grouping field**: leave empty; **When**: `subject`; **Condition**:
+   **Contains** (or **Is not equal to** with an empty value if *Contains* isn't listed); **Value**:
+   `Files/reference/`. It duplicates the filter from step 7, which is harmless.
+   </details>
+
+9. **Action** → **Select action** (it defaults to **Message to individuals**; change it) → under **Run Fabric
+   activities** **select** **Notebook** → **Select Fabric item to run** → `LoadStopsReference`. (No parameters.)
 
    ![Step 9](../../assets/screenshots/lab-06/step-03.png)
 
@@ -86,7 +98,8 @@
 
    *Adapted from: [Trigger Fabric items](https://learn.microsoft.com/fabric/real-time-intelligence/data-activator/activator-trigger-fabric-items)*
 
-10. **Save location** → **Workspace** `RTI Transit`; **Item** → **Create a new item** → `TransitAutomation`.
+10. **Save location** → **Workspace**: your workspace; **Item**: open the dropdown (it defaults to **My activator**)
+    → **Create a new item** → `TransitAutomation`.
     **Click** **Create**, then on **Alert created** **click** **Open** (or **Done** and open `TransitAutomation`
     from the workspace).
 

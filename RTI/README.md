@@ -53,7 +53,7 @@ Used consistently across every lab, script and doc in this folder. Keep future e
 - Activator items: **`TransitAlerts`** (rules on the live stream), **`TransitAutomation`** (rules on OneLake events)
 - Notebook: **`LoadStopsReference`**
 - Azure side (presenter): Azure Function in [`../RTIBCN/`](../RTIBCN/README.md) publishing raw envelopes to both hubs of a feed; Event Hubs namespace `evhns-rtibcn-premium-1976` (Premium), event hubs `tmb-ibus-1-65`, `tmb-ibus-66-130`, `tmb-metro-1-65`, `tmb-metro-66-130` (100 consumer groups per hub; 120 attendees + spare → two hubs per feed), listen-only SAS policy `attendee-listen`, consumer groups `user-001` … `user-130`
-- Alert thresholds used everywhere: **long wait = next bus > 12 minutes sustained 3 minutes**; **silent stop = no events for 10 minutes**
+- Alert thresholds used everywhere: **long wait = next bus > 12 minutes sustained 5 minutes**; **silent stop = no events for 10 minutes**
 
 ## Quick start (attendees)
 

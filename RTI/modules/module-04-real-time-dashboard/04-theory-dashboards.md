@@ -36,7 +36,7 @@ Both can sit on the same Eventhouse. Today we need seconds, so it's a Real-Time 
 ## Live demo before the lab (3 minutes, instructor workspace)
 
 Open the finished `TransitOpsDashboard` in **Viewing** mode: let the venue table tick once. Switch to **Editing**,
-open the map tile's editor, show the query pane and the **Visual formatting** pane (**Map**, **Latitude and
+open the map tile's editor, show the query pane and the **Visual setup** pane (**Map**, **Latitude and
 longitude**). Change the **Line** parameter and watch the time chart re-query. Show **Manage → Refresh settings**.
 Done; that's the whole lab.
 

@@ -47,27 +47,39 @@ You know your own email address on the event account (and whether Teams is avail
    **Open in Activator** so you get the full editor (the in-pane form is fine for simple rules, but we want an
    occurrence setting and the analytics).
 
-5. In the Activator editor's **Explorer**, **select** the **ForumNextBus** stream and **click** **New rule** (ribbon).
+5. First the **object**, then the rule. In the Activator editor's **Explorer**, **select** the **ForumNextBus**
+   stream and **click** **New object** (ribbon). In the pane:
+   - **Object name**: `VenueLine`
+   - **Object ID** (the field that identifies one instance): `LineCode`
+   - **Properties**: `MinutesToArrival`, `StopCode`, `StopName`, `Destination`, `WindowEnd`
+   - **Click** **Create**.
 
-6. In the **Definition** pane:
+   > ✅ Expected result: `VenueLine` appears in the Explorer with its five properties underneath. This is the "one
+   > state per line" the theory talked about: from now on every rule on this object is evaluated separately for
+   > H16, 7 and 136.
+
+   *Adapted from: [Assign data to objects in Activator](https://learn.microsoft.com/fabric/real-time-intelligence/data-activator/activator-assign-data-objects)*
+
+6. **Select** the **`MinutesToArrival`** property under `VenueLine` and **click** **New rule** (ribbon). In the
+   **Definition** pane:
    - **Rule name**: `Long wait at the Fòrum`
-   - **Monitor**: **Check** → **On each event grouped by a field**; **Group by** `LineCode`; **field to check**
-     `MinutesToArrival`
+   - **Monitor**: already set to `MinutesToArrival` of `VenueLine`
    - **Condition**: **Is greater than** → `12`
-   - **Occurrence**: **When it has been true for** → `3` **minutes**
+   - **Occurrence**: **When it has been true for** → `5` **minutes** (the shortest duration the picker offers)
 
    ![Step 6](../../assets/screenshots/lab-05/step-02.png)
 
    > ✅ Expected result: the **Definition** tab's preview chart shows the next-bus minutes per line over the last
    > while, with the 12-minute threshold drawn. You can already see whether any line has been above it. Because the
-   > stream carries one value per line per minute, "true for 3 minutes" means three consecutive windows.
+   > stream carries one value per line per minute, "true for 5 minutes" means five consecutive windows: a real
+   > gap in service, not one wobbly prediction.
 
    <details>
-   <summary>Troubleshooting — I don't see "grouped by a field" / the object choice</summary>
+   <summary>Troubleshooting — the editor offers "On each event grouped by a field" instead of objects</summary>
 
-   Older Activator editors ask you to create an **object** first: select the stream → **New object** → **Object
-   ID** `LineCode`, **Properties** `MinutesToArrival`, `StopCode` → **Create**. Then create the rule on the
-   `MinutesToArrival` property of that object. Same result: one state per line.
+   Some tenants show the newer, object-less form. Then: **Check** → **On each event grouped by a field**;
+   **Group by** `LineCode`; **field to check** `MinutesToArrival`; same condition and occurrence. Same result:
+   one state per line.
    </details>
 
    *Adapted from: [Detection settings in Activator](https://learn.microsoft.com/fabric/real-time-intelligence/data-activator/activator-detection-conditions)*
@@ -85,13 +97,13 @@ You know your own email address on the event account (and whether Teams is avail
 8. **Click** **Save**, then **Send me a test alert**.
 
    > ✅ Expected result: an email arrives within a minute, built from a *past* window that satisfied the rule.
-   > If the button is disabled, no line has been over 12 minutes for 3 consecutive minutes yet; carry on, start the
+   > If the button is disabled, no line has been over 12 minutes for 5 consecutive minutes yet; carry on, start the
    > rule, and check back after the break.
 
 9. **Click** **Start**.
 
    > ✅ Expected result: the rule card shows **Running**. From now on, each *line* at the venue stop is tracked
-   > independently; a line whose next bus stays more than 12 minutes away for three minutes triggers one
+   > independently; a line whose next bus stays more than 12 minutes away for five minutes triggers one
    > message, and won't message again until it recovers and re-enters the state.
 
    *Adapted from: [Create Activator rules](https://learn.microsoft.com/fabric/real-time-intelligence/data-activator/activator-create-activators)*
@@ -100,9 +112,9 @@ You know your own email address on the event account (and whether Teams is avail
 
 ### Part C — Rule 2: `Stop went silent` (heartbeat)
 
-10. **Select** the **ForumNextBus** stream again, **click** **New rule**.
+10. **Select** the **`MinutesToArrival`** property of `VenueLine` again and **click** **New rule**.
     - **Rule name**: `Stop went silent`
-    - **Monitor**: grouped by `LineCode`
+    - **Monitor**: `MinutesToArrival` of `VenueLine` (any property works; the heartbeat is about the object's events)
     - **Condition**: category **Heartbeat** → **No presence of data**; **duration** `10` **minutes**
     - **Action**: **Email**, **Subject** `No arrival data for line @LineCode at the Fòrum for 10 minutes`,
       **Headline** `Check the feed (Function / Event Hubs) before blaming TMB.`
@@ -114,8 +126,8 @@ You know your own email address on the event account (and whether Teams is avail
 
 ### Part D — Optional: Rule 3 `Bus arriving now` (stateful change)
 
-11. **New rule** on **ForumNextBus**: name `Bus arriving now`; grouped by `LineCode`; condition category
-    **Numeric change** → **Decreases below** → `2` on `MinutesToArrival`; action Teams or email, headline
+11. **New rule** on the `MinutesToArrival` property of `VenueLine`: name `Bus arriving now`; condition category
+    **Numeric change** → **Decreases below** → `2`; action Teams or email, headline
     `@LineCode is arriving at the Fòrum now`. **Save**, **Start**.
 
     > ✅ Expected result: this one fires once per line each time the prediction *crosses* below 2 minutes, not
@@ -140,14 +152,14 @@ You know your own email address on the event account (and whether Teams is avail
 > 🎤 Facilitator note: keep your own `Long wait` email from the dry run ready to show. Real data may be
 > perfectly punctual for the 23 minutes this lab runs, and that's a fine teaching point too.
 
-<!-- facilitator: check three things for anyone whose rule "does nothing": grouped by LineCode (not StopCode), the field is the MIN_ column (not a raw MinutesToArrival that doesn't exist on this stream), and the rule is started. Then Send me a test alert. -->
+<!-- facilitator: check three things for anyone whose rule "does nothing": the object's ID is LineCode (not StopCode), the rule sits on the MinutesToArrival property, and the rule is started. Then Send me a test alert. -->
 
 ## Checkpoint
 
 At the end of this lab, your workspace contains Activator item **`TransitAlerts`**, fed by the `ForumNextBus`
-derived stream, with:
-- `Long wait at the Fòrum` — `MinutesToArrival` **Is greater than 12**, **true for 3 minutes**, grouped by `LineCode`, **Running**
-- `Stop went silent` — **No presence of data** for 10 minutes, grouped by `LineCode`, **Running**
+derived stream, with object **`VenueLine`** (ID `LineCode`) and:
+- `Long wait at the Fòrum` — `MinutesToArrival` **Is greater than 12**, **true for 5 minutes**, **Running**
+- `Stop went silent` — **No presence of data** for 10 minutes, **Running**
 - optionally `Bus arriving now` — **Decreases below 2**, **Running**
 
 You've turned a stream into a per-line state machine with actions. Take the break, then continue to

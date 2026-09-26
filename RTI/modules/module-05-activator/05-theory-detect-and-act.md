@@ -38,7 +38,7 @@ Plus **Summarization** (average/min/max/sum/count over a rolling window) and up 
 (e.g. `Rank == 1`) that narrow which events a rule sees.
 
 **Why "sustained" matters.** A bus prediction of 13 minutes for one poll is noise (TMB's estimate wobbles). Thirteen
-minutes for three consecutive minutes is a gap in service. Stateless-with-occurrence, or a stateful "Increases
+minutes for five consecutive minutes is a gap in service. Stateless-with-occurrence, or a stateful "Increases
 above", is what separates an alert from spam. This afternoon Brian's `Freezer running warm` rule makes the same
 choice ("above -12 °C, sustained 5 minutes") on the ontology; you build the bus version now.
 
@@ -60,12 +60,12 @@ email so you can watch a rule fire end-to-end within minutes.
 
 ## What we build
 
-In Activator item **`TransitAlerts`**, fed by the `ForumNextBus` derived stream (your venue stop only, one row per
-line per minute with the minimum, i.e. next-bus, prediction), object = `LineCode`:
+In Activator item **`TransitAlerts`**, fed by the `ForumNextBus` derived stream (the venue stops, one row per
+line per minute with the minimum, i.e. next-bus, prediction), object **`VenueLine`** with ID `LineCode`:
 
 | Rule | Condition | Occurrence | Action |
 |---|---|---|---|
-| `Long wait at the Fòrum` | `MinutesToArrival` **Is greater than** `12` | **When it has been true for** `3 minutes` (three consecutive windows) | Email (Teams if available) |
+| `Long wait at the Fòrum` | `MinutesToArrival` **Is greater than** `12` | **When it has been true for** `5 minutes` (five consecutive windows; the shortest the picker offers) | Email (Teams if available) |
 | `Stop went silent` | **No presence of data** | `10 minutes` | Email |
 | `Bus arriving now` (optional) | `MinutesToArrival` **Decreases below** `2` | — | Teams/email |
 
@@ -82,7 +82,7 @@ eventstream gives Activator one clean number per line. The alternative is Activa
 ## Live demo before the lab (4 minutes, instructor workspace)
 
 1. Open `TransitAlerts`. Select `Long wait at the Fòrum`: walk the **Definition** pane top to bottom: grouped
-   by `LineCode`, `MinutesToArrival` **Is greater than 12**, **When it has been true for 3 minutes**, the email
+   by `LineCode` (the `VenueLine` object), `MinutesToArrival` **Is greater than 12**, **When it has been true for 5 minutes**, the email
    action with `@LineCode` in the headline. Point at the chart with the threshold line.
 2. Open the **Analytics** tab: activations over time, per line.
 3. Show your inbox with the email the rule sent during the dry run.

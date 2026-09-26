@@ -47,7 +47,7 @@ and `TransitQueries` holds the saved E-queries. Tile queries are also collected 
    | project StopName, Zone, Lines, LongestWaitMin, Lat, Lon
    ```
 
-4. In **Visual formatting**, **set** **Visual type** to **Map**. Under **Data**, **set** **Define location by**
+4. On the **Visual setup** tab of the pane on the left, **set** **Visual type** to **Map**. Under **Data**, **set** **Define location by**
    to **Latitude and longitude**, **Latitude column** `Lat`, **Longitude column** `Lon`. Under **Size**, **turn
    on** sizing and **set** **Size column** to `LongestWaitMin`. **Label** column `StopName` if offered.
 
@@ -83,8 +83,10 @@ and `TransitQueries` holds the saved E-queries. Tile queries are also collected 
    | summarize AvgWaitMin = avg(MinutesToArrival) by bin(PolledAtUtc, 5m), LineCode
    ```
 
-   **Set** **Visual type** to **Time chart**, **X column** `PolledAtUtc`, **Y columns** `AvgWaitMin`, **Series
-   columns** `LineCode`. **Click** **Done**, **rename** to `Average wait by line (5 min)`.
+   On the **Visual setup** tab, **set** **Visual type** to **Time chart**. Under **Data**, in the order the pane
+   shows them: **Y columns** `AvgWaitMin`, **X column** `PolledAtUtc`, **Series columns** `LineCode` (the pane
+   defaults to *Infer* for each; the inferred choice is usually right, but set them explicitly). Under
+   **General**, **Tile name** `Average wait by line (5 min)`. **Click** **Done**.
 
    > ✅ Expected result: one line per bus line. **Change** the **Line** dropdown to a single line and the chart
    > re-queries with only that series: the filter is pushed into the KQL, not applied on top of a big result.
@@ -130,12 +132,13 @@ and `TransitQueries` holds the saved E-queries. Tile queries are also collected 
     | summarize StopsWaiting = dcount(StopCode)
     ```
 
-12. On the `Stops with a long wait` tile, **click** **…** → **Set alert**. Notice the **Add rule** pane opens
-    with the tile's query as the monitored source. **Close** it without creating the rule.
+12. On the `Next buses at the venue` **table** tile, **click** **…** → **Set alert**. Notice the **Add rule** pane
+    opens with the tile's query as the monitored source. **Close** it without creating the rule.
 
     > ✅ Expected result: you've seen the third way into Activator (eventstream, Fabric events, dashboard tile).
     > Module 05 builds real rules on the stream, where latency is seconds rather than the dashboard's refresh
-    > interval.
+    > interval. The **KPI** visual doesn't offer **Set alert** (its query returns a single number and the tile
+    > type is newer than the alerting integration), which is why this step uses the table tile.
 
 <!-- facilitator: if running behind, stop after Part B. The map is the memorable tile. -->
 
