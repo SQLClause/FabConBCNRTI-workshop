@@ -1,7 +1,7 @@
-# Module 01 Theory: Fabric IQ Architecture and Context
+# Module 09 Theory: Fabric IQ Architecture and Context
 
 **Duration:** 10 minutes
-**Prerequisites:** Module 00 complete — your "Fabric IQ" workspace is verified and contains
+**Prerequisites:** Module 08 complete — your "Fabric IQ" workspace is verified and contains
 `ColdChainLakehouse`, `ColdChainEventhouse`, `FreezerTelemetryEventstream`, and `00_LoadReferenceData`.
 
 **Learning objectives**
@@ -11,7 +11,7 @@
 
 ## Topic 1: Fabric IQ concepts in practical architecture
 
-Everything you built or verified in Module 00 — the Lakehouse, the Eventhouse, the Eventstream — is data
+Everything you built or verified in Module 08 — the Lakehouse, the Eventhouse, the Eventstream — is data
 plumbing. It moves and stores data, but it doesn't know what any of that data *means* to the business. A
 `ColdChainLakehouse.Freezers` table and a `FreezerTelemetryRaw` KQL table are, as far as Fabric is
 concerned, just a Delta table and a KQL table. Nothing tells Fabric — or an AI agent — that they describe
@@ -23,7 +23,7 @@ Work IQ and Foundry IQ), and it brings three layers of context to your data:
 
 - **Unified data (OneLake).** Fabric IQ doesn't copy your data — it binds to what's already in OneLake:
   Lakehouses, Eventhouses, Power BI semantic models, even data shortcut-ed in from outside Fabric. This
-  is a critical property to internalize before Module 03: when we build the ontology and bind it to
+  is a critical property to internalize before Module 11: when we build the ontology and bind it to
   `ColdChainLakehouse` and `ColdChainEventhouse`, we are not duplicating those tables — we're layering
   meaning on top of the same rows.
 - **Business intelligence (Power BI semantic models).** Curated measures, hierarchies, and KPIs. Ontologies
@@ -38,27 +38,27 @@ The IQ workload's core items, several of which we build hands-on later today, ar
 
 | Item | What it does | When we touch it |
 |---|---|---|
-| **Ontology** (preview) | Shared business vocabulary — entities, relationships, properties, rules | Module 03 |
-| **Graph** | Visual/queryable traversal of the relationships the ontology declares | Module 03 |
+| **Ontology** (preview) | Shared business vocabulary — entities, relationships, properties, rules | Module 11 |
+| **Graph** | Visual/queryable traversal of the relationships the ontology declares | Module 11 |
 | **Power BI semantic model** | Curated KPIs and measures; ontologies can be generated from it | Referenced, not built today |
 | **Planning** | Collaborative forecasting/planning on the same data foundation | Not used in this scenario |
-| **Data agent** | Natural-language Q&A grounded in the ontology / semantic model | Module 04 |
-| **Operations agent** | Monitors live data, detects anomalies, triggers governed action | Module 04 |
+| **Data agent** | Natural-language Q&A grounded in the ontology / semantic model | Module 12 |
+| **Operations agent** | Monitors live data, detects anomalies, triggers governed action | Module 12 |
 
-None of these exist in your workspace yet — you confirmed that in Module 00's lab. What you *do* have is
+None of these exist in your workspace yet — you confirmed that in Module 08's lab. What you *do* have is
 exactly the unified-data foundation Fabric IQ needs: a Lakehouse with business reference data and an
 Eventhouse ready to receive live telemetry. That's the deliberate starting point for everything that
 follows this afternoon.
 
 > 🎤 Facilitator note: emphasize "binds, doesn't copy" — it's the single most-asked question later in
-> Module 03 ("wait, is the ontology creating a new table?").
+> Module 11 ("wait, is the ontology creating a new table?").
 
 *Source: [What is Fabric IQ?](https://learn.microsoft.com/fabric/iq/overview)*
 
 ## Topic 2: Why context matters for event interpretation
 
-Here's a value straight out of the Eventhouse you verified in Module 00 (once the generator is running in
-Module 02, this is what a row of `FreezerTelemetryRaw` will actually look like):
+Here's a value straight out of the Eventhouse you verified in Module 08 (once the generator is running in
+Module 10, this is what a row of `FreezerTelemetryRaw` will actually look like):
 
 ```
 FreezerId: "FRZ-0142"
@@ -92,7 +92,7 @@ same pattern, built end to end: `Freezer` (device) → `Store` (location) → `C
 with live temperature telemetry bound to the `Freezer` entity so the number always resolves back to a
 named, owned, business-meaningful thing.
 
-This is also why Module 02's grounding work and Module 03's ontology design aren't optional plumbing —
+This is also why Module 10's grounding work and Module 11's ontology design aren't optional plumbing —
 they're the entire point of the section. An agent asked "which freezers are at risk right now" cannot give
 a trustworthy answer over raw `FreezerTelemetryRaw` rows alone; it needs the same business context you, as
 a human reading this table, were just missing.
@@ -107,4 +107,4 @@ a human reading this table, were just missing.
 - [What is Fabric IQ?](https://learn.microsoft.com/fabric/iq/overview)
 - [Get started with Fabric IQ](https://learn.microsoft.com/fabric/iq/get-started-with-fabric-iq)
 
-Continue to [Lab 01: Explore Workspace and Data Landscape](lab-01-explore-workspace-and-data-landscape.md).
+Continue to [Lab 09: Explore Workspace and Data Landscape](lab-09-explore-workspace-and-data-landscape.md).

@@ -25,7 +25,7 @@
 # =============================================================================
 # 00_LoadReferenceData
 #
-# Fabric IQ workshop -- Module 01/02 supporting notebook.
+# Fabric IQ workshop -- Module 09/10 supporting notebook.
 #
 # Loads the three cold-chain reference CSVs (Stores, Freezers, Customers)
 # from this Lakehouse's Files section into three managed Delta tables of the
@@ -33,7 +33,7 @@
 # ontology pattern this workshop follows: live freezer telemetry streams in
 # via FreezerTelemetryEventstream (see artifacts/Eventstream/), while the
 # slower-changing "who/where/what" reference data lands here, in the
-# Lakehouse, where a Fabric IQ ontology (built live in Module 03) can bind to
+# Lakehouse, where a Fabric IQ ontology (built live in Module 11) can bind to
 # it as entity properties.
 #
 # This file is checked in using Fabric's own notebook git-source format (the
@@ -206,7 +206,7 @@ display(customers_df)
 
 # --- Verification -----------------------------------------------------------
 # Quick sanity check: join Freezers -> Stores to confirm referential
-# integrity of the reference data before attendees move on to Module 02's
+# integrity of the reference data before attendees move on to Module 10's
 # streaming-enrichment lab (which mirrors this same join, but in KQL, over
 # live telemetry -- see artifacts/Eventhouse/ColdChainKQLDB.kql).
 verification_df = freezers_df.join(stores_df, on="StoreId", how="left").select(

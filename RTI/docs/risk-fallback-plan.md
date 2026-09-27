@@ -22,7 +22,7 @@
 | 05 – Activator | Teams action unavailable on event accounts | Medium | Low | Email is the default in every step | — |
 | 06 – Fabric events | OneLake event → notebook takes 1–3 min (Spark cold start) and people think it failed | High (expected) | Low | Lab sets expectations, Monitor hub on the projector | — |
 | 06 – Fabric events | Tenant has Fabric events disabled | Low | Medium | Check in prerequisites; presenter demo instead | Recording of Part C |
-| 07 – Wrap-up | Attendees forget to pause streams → afternoon capacity throttled | Medium | Medium for the IQ half | Explicit numbered steps; Brian re-checks in IQ Lab 00 Part B | — |
+| 07 – Wrap-up | Attendees forget to pause streams → afternoon capacity throttled | Medium | Medium for the IQ half | Explicit numbered steps; Brian re-checks in IQ Lab 08 Part B | — |
 
 ## Fallback assets
 
@@ -42,4 +42,4 @@
 - [ ] Consumer-group sheet printed; 10 spare groups exist.
 - [ ] Threshold sanity: during the dry run between 11:00 and 13:00 local, `Long wait at the Fòrum` fired at
       least three times; if not, lower the threshold in Lab 05 to 10 minutes.
-- [ ] Confirm with Brian that IQ Lab 00 Part B includes the "pause your morning eventstreams" check.
+- [ ] Confirm with Brian that IQ Lab 08 Part B includes the "pause your morning eventstreams" check.

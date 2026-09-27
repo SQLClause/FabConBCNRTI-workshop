@@ -1,6 +1,6 @@
-# Module 05 Theory: Prompting, Grounding, Validation, and Trust
+# Module 13 Theory: Prompting, Grounding, Validation, and Trust
 
-**Duration:** 10 minutes (this module's time was cut from 35 to 15 minutes total to fund Module 00's
+**Duration:** 10 minutes (this module's time was cut from 35 to 15 minutes total to fund Module 08's
 expanded live setup — see `docs/agenda.md`; trim discussion depth here first if you're still running
 long, before touching the lab)
 **Format:** Presenter-led discussion, no hands-on activity in this part.
@@ -16,10 +16,10 @@ long, before touching the lab)
 
 ## Why this module exists
 
-You've now built the whole chain: telemetry grounded with business context (Module 02), a
+You've now built the whole chain: telemetry grounded with business context (Module 10), a
 `ColdChainOntology` that formalizes Customer, Store, and Freezer as entity types with real relationships
-(Module 03), and two agents — `ColdChainDataAgent` for conversational Q&A and `ColdChainOperationsAgent`
-for continuous monitoring — that reason over that ontology (Module 04). This module asks the question
+(Module 11), and two agents — `ColdChainDataAgent` for conversational Q&A and `ColdChainOperationsAgent`
+for continuous monitoring — that reason over that ontology (Module 12). This module asks the question
 that actually matters once agents start answering questions and taking action on real operational data:
 **why should anyone trust what they say or do?**
 
@@ -79,7 +79,7 @@ and property names, and Microsoft calls out that a well-grounded agent's respons
 entity types and relationships back to you, "not just raw tables and columns" — that's your signal the
 grounding is actually working, not just present ([Ontology tutorial part 4](https://learn.microsoft.com/fabric/iq/ontology/tutorial-4-create-data-agent)).
 When you demo `ColdChainDataAgent` questions
-later (or recap Module 04's), point this out explicitly: a good response *names* `Freezer`, `Store`, and
+later (or recap Module 12's), point this out explicitly: a good response *names* `Freezer`, `Store`, and
 the property it checked, rather than reading like a black-box summary.
 
 ## Trust, transparency, and traceability — made concrete
@@ -98,7 +98,7 @@ checkable meanings:
   operations agent rule isn't a black box — you can open the rule and see the actual query it runs
   against the ontology or Eventhouse, in terms of the real properties and conditions it evaluates.
 - **Traceability**: can you walk backward from an agent's action to the specific data that caused it?
-  This is the one worth walking through concretely, because it's exactly what Lab 05 does hands-on (or as
+  This is the one worth walking through concretely, because it's exactly what Lab 13 does hands-on (or as
   a facilitator-led walkthrough, if time is short).
 
 ### Worked example: tracing `Freezer running warm`
@@ -127,8 +127,8 @@ looked at a dashboard and said "freezer 12 seems concerning," there would be no 
 > a compressed pass — it's the concrete anchor for everything else in this module. Everything else
 > (prompting phrasing, the ungrounded-vs-grounded contrast) can be delivered faster if needed.
 
-<!-- facilitator: this module doubles as the section's time-box buffer. If Module 03 or 04 ran long, cut
-straight to the "worked example" above and treat Lab 05 as a single facilitator-led walkthrough rather
+<!-- facilitator: this module doubles as the section's time-box buffer. If Module 11 or 12 ran long, cut
+straight to the "worked example" above and treat Lab 13 as a single facilitator-led walkthrough rather
 than individual hands-on steps — see docs/risk-fallback-plan.md. -->
 
 ## Further reading
@@ -146,4 +146,4 @@ than individual hands-on steps — see docs/risk-fallback-plan.md. -->
   the explicit reminder that LLM-driven outputs remain probabilistic and require review, even when
   grounded.
 
-Continue to [Lab 05: Validate and Audit Agent Responses](lab-05-validate-and-audit-agent-responses.md).
+Continue to [Lab 13: Validate and Audit Agent Responses](lab-13-validate-and-audit-agent-responses.md).

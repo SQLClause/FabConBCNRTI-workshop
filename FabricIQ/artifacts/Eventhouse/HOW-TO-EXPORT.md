@@ -90,11 +90,11 @@ form (`ifnotexists` / `create-or-alter`), so re-running `provision_fabric_iq.py`
 (e.g. with `--force`) re-applies the script harmlessly rather than erroring
 on already-existing tables/view — confirmed live on a second run.
 
-**Note for Module 02's lab:** `FreezerTelemetryEnriched` already exists by
-the time attendees reach Lab 02 — that lab's Part E was rewritten to explain
+**Note for Module 10's lab:** `FreezerTelemetryEnriched` already exists by
+the time attendees reach Lab 10 — that lab's Part E was rewritten to explain
 and confirm the view (reading the KQL, running `.show materialized-view`)
 rather than having attendees create it themselves, since it's no longer a
-"first time this exists" moment. See `lab-02-join-streaming-and-reference-data.md`.
+"first time this exists" moment. See `lab-10-join-streaming-and-reference-data.md`.
 
 ## Validate before the event
 

@@ -4,7 +4,7 @@ Presenter-only notes. Not part of the attendee handout.
 
 ## Format decisions worth knowing
 
-- **Portal-only for attendees, by design.** The IQ half installs Git/Python/`fab` live in its Module 00 and
+- **Portal-only for attendees, by design.** The IQ half installs Git/Python/`fab` live in its Module 08 and
   budgets 40 minutes for it. Doing any local install in the morning would either duplicate that or force a
   re-plan of Brian's agenda. Everything here happens in the Fabric portal; the only "local" thing is the
   presenter's Azure Function and Event Hubs.

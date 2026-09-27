@@ -3,7 +3,7 @@
 check_environment.py -- Fabric IQ workshop preflight environment checker.
 
 Run this BEFORE `provision_fabric_iq.py` (or right after cloning, per
-Lab 00 Part A). It checks the tools this workshop's Python tooling needs
+Lab 08 Part A). It checks the tools this workshop's Python tooling needs
 -- Git, Python 3.10+, and a working, isolated pip -- and fixes what it
 safely can instead of just failing.
 

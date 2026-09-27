@@ -1,4 +1,4 @@
-# Module 06: Wrap-up and Resources
+# Module 14: Wrap-up and Resources
 
 **Duration:** 10 minutes
 **Format:** Presenter-led recap. Not a lab — no new hands-on steps in this module.
@@ -13,28 +13,28 @@
 
 Every module handed off directly to the next. Here's the whole arc in one place:
 
-1. **Workspace and plumbing** (Module 00) — the "Fabric IQ" workspace, provisioned via
+1. **Workspace and plumbing** (Module 08) — the "Fabric IQ" workspace, provisioned via
    `setup/provision_fabric_iq.py`, with `ColdChainLakehouse` (reference data: Customers, Stores,
    Freezers), `ColdChainEventhouse`, and `FreezerTelemetryEventstream` already in place before hands-on
    work began.
-2. **Architecture and context** (Module 01) — where Fabric IQ sits relative to the RTI items you already
+2. **Architecture and context** (Module 09) — where Fabric IQ sits relative to the RTI items you already
    knew from the morning, and why raw events need business context to be interpretable at all.
-3. **Grounded telemetry** (Module 02) — live freezer temperature readings combined with static reference
+3. **Grounded telemetry** (Module 10) — live freezer temperature readings combined with static reference
    data and enriched into `FreezerTelemetryEnriched`, the semantically meaningful table everything
    downstream is bound to.
-4. **`ColdChainOntology`** (Module 03) — the shared business vocabulary: `Customer`, `Store`, and
+4. **`ColdChainOntology`** (Module 11) — the shared business vocabulary: `Customer`, `Store`, and
    `Freezer` entity types (`Freezer` carrying static `Model`/`Capacity`/`InstallDate` plus live
    `TemperatureC`/`DoorOpen`), connected by `Store —has—> Freezer` and `Customer —shops at—> Store`
    relationships, bound to the Lakehouse and Eventhouse data underneath — without copying it.
-5. **Agents grounded in that ontology** (Module 04) — `ColdChainDataAgent` for conversational Q&A, and
+5. **Agents grounded in that ontology** (Module 12) — `ColdChainDataAgent` for conversational Q&A, and
    `ColdChainOperationsAgent` paired with the `Freezer running warm` Activator rule for continuous,
    governed monitoring and alerting.
-6. **Trust and traceability** (Module 05) — the payoff of all of the above: every agent answer and every
+6. **Trust and traceability** (Module 13) — the payoff of all of the above: every agent answer and every
    fired alert traces back through a specific entity instance, specific property values, and the
    underlying Eventhouse/Lakehouse data — not a black-box claim.
 
 **Architecture → grounding → ontology → agents → trust.** That's the whole line, and it's the same line
-Module 00's kickoff opened with four hours ago.
+Module 08's kickoff opened with four hours ago.
 
 ## Official Microsoft tutorials
 
@@ -52,7 +52,7 @@ Module 00's kickoff opened with four hours ago.
   (ontology, graph, and data agent tutorials) this workshop drew from, for whenever you want to rebuild
   today's scenario — or a different one — end to end on your own.
 - **[mslearn-fabric hands-on labs](https://microsoftlearning.github.io/mslearn-fabric/)** — the full
-  Microsoft-maintained lab catalogue this workshop's Module 03/04 labs referenced (labs 23, 24, 27, 28).
+  Microsoft-maintained lab catalogue this workshop's Module 11/12 labs referenced (labs 23, 24, 27, 28).
   It covers the rest of Fabric too, well beyond Fabric IQ, if you want to go deeper on the platform.
 - **[microsoft/Ontology-Playground](https://github.com/microsoft/Ontology-Playground)** — a free,
   open-source, zero-backend web app for learning ontology design outside of Fabric itself: browse a
@@ -75,7 +75,7 @@ Thank you for spending your afternoon on this. A couple of closing housekeeping 
 - **If you want to keep it**, that's completely fine too — everything you built is yours to keep exploring
   or extend into a real scenario.
 - Please share feedback with your facilitator, or via whatever feedback channel this event is using — it
-  directly shapes whether Module 05's time-box buffer, the pacing of Modules 03/04, and the overall
+  directly shapes whether Module 13's time-box buffer, the pacing of Modules 11/12, and the overall
   scenario choice hold up for the next run of this workshop.
 
 That's the end of the Fabric IQ section. Thank you for building the whole cold-chain scenario with us

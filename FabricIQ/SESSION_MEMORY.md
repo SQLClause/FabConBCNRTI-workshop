@@ -11,7 +11,7 @@ re-deriving it. It complements [`BUILD_PLAN.md`](BUILD_PLAN.md) (the design/fold
   Architectures with Fabric Real-Time Intelligence," co-presented by **Johan** (Real-Time Intelligence
   half) and **Brian** (Fabric IQ half, this folder). Likely tied to FabCon Barcelona (the sample data
   scenario was localized to Barcelona-area stores for that reason — see below).
-- Brian's section is the **second 4 hours**, running **after** Johan's RTI half — Module 00/01 give only
+- Brian's section is the **second 4 hours**, running **after** Johan's RTI half — Module 08/09 give only
   a light RTI recap, not a from-scratch RTI intro. If the running order ever changes, flag this as
   needing real content added.
 - Audience: data/AI practitioners already comfortable with Fabric basics (workspaces, lakehouses, KQL),
@@ -24,7 +24,7 @@ re-deriving it. It complements [`BUILD_PLAN.md`](BUILD_PLAN.md) (the design/fold
 1. **CLI provisioning script provisions plumbing only** — workspace, Lakehouse, Eventhouse, Eventstream,
    notebook. It deliberately does **not** create the Ontology, Data Agent, or Operations Agent items.
    Reason: Fabric CLI (`fab`) has no confirmed support for those (still-preview) item types, and building
-   them live is the actual pedagogical point of Modules 03–04.
+   them live is the actual pedagogical point of Modules 11–12.
 2. **Attendees use their own org's Fabric capacity**, not a trial capacity — Fabric IQ's Ontology/Graph
    preview features are confirmed unsupported on trial (FT1) capacities, so the setup script hard-blocks
    trial-SKU selection (override requires `--force` + explicit acknowledgement).
@@ -57,12 +57,12 @@ Keep any future edits consistent with this — it's referenced by name across ~2
     `lookup`-joined to `StoresDim`/`FreezersDim`)
 - Eventstream: **`FreezerTelemetryEventstream`** (custom-endpoint source, Event Hubs/AMQP protocol)
 - Notebook: **`00_LoadReferenceData`**
-- Ontology (built live in Module 03, not scripted): **`ColdChainOntology`** — entity types `Customer`,
+- Ontology (built live in Module 11, not scripted): **`ColdChainOntology`** — entity types `Customer`,
   `Store`, `Freezer`; relationships `Store`—`has`—>`Freezer`, `Customer`—`ShopsAt`—>`Store` (field value
   is the single token `ShopsAt`; spoken/prose form is "Customer shops at Store" — entity/relationship
   names can't contain spaces)
-- Data Agent (built live, Module 04): **`ColdChainDataAgent`**
-- Operations Agent (built live, Module 04): **`ColdChainOperationsAgent`**, paired with Activator
+- Data Agent (built live, Module 12): **`ColdChainDataAgent`**
+- Operations Agent (built live, Module 12): **`ColdChainOperationsAgent`**, paired with Activator
   Ontology Rule **`Freezer running warm`** (fires when `TemperatureC` > ~-12°C, sustained ~5 min)
 - Sample data / scenario dressing: **Fabrikam Fresh**, a 6-store retail chain across Barcelona (×2),
   Madrid, Valencia, Bilbao, Seville (`artifacts/SampleData/*.csv`) — this localization was a judgment
@@ -80,18 +80,18 @@ Keep any future edits consistent with this — it's referenced by name across ~2
   No confirmed support for Ontology/Graph/Data Agent item types. No native interactive capacity picker or
   "import from GitHub URL" — both had to be hand-built in `provision_fabric_iq.py`.
 - **Microsoft's own Digital Twin Builder RTI tutorial** (bus/bus-stop scenario) is the direct template
-  for the RTI→Ontology bridge lab (Module 02→03): static contextual data → Lakehouse → ontology →
+  for the RTI→Ontology bridge lab (Module 10→11): static contextual data → Lakehouse → ontology →
   projected into Eventhouse. Microsoft's own **retail ontology tutorial** (Customer/Store/Freezer) is the
-  direct template for Module 03's ontology build. Full URL list is in `docs/agenda.md`.
+  direct template for Module 11's ontology build. Full URL list is in `docs/agenda.md`.
 - **The ontology graph does NOT auto-refresh** when new rows land in a bound source — this was discovered
-  during Module 03 lab authoring (via live Microsoft Learn doc research) and is a real, non-obvious
+  during Module 11 lab authoring (via live Microsoft Learn doc research) and is a real, non-obvious
   product behavior: the lab has attendees explicitly trigger the auto-created Graph item's "Refresh now"
   rather than waiting for live updates that will never come. Getting this backwards live would be a
   visible failure mode — flagged as high-value, keep this step in any future edits.
 - **Fabric Eventstream's "custom endpoint" source is Event Hubs-compatible SAS/AMQP, not plain HTTPS** —
   the telemetry generator script uses `azure-eventhub` (lazily imported) for this reason, not `requests`.
   This dependency is documented in `setup/requirements.txt`, `prerequisites/PREREQUISITES.md`, and as an
-  explicit `pip install` step inside `lab-02`.
+  explicit `pip install` step inside `lab-10`.
 
 ## MarpToPptx / template findings (empirically verified, not just read from docs)
 
@@ -154,11 +154,11 @@ These are called out inline in the relevant files too, but collected here for vi
     under `artifacts/` don't exist yet.
 - **NEW gap found while live-testing (not resolved, and intentionally not addressed this pass — see
   `setup/README.md`'s "What this script explicitly does NOT do", which a later session was explicitly
-  told to keep as-is)**: `lab-00`'s checkpoint and `lab-01`/`lab-02`'s prerequisites all assume
+  told to keep as-is)**: `lab-08`'s checkpoint and `lab-09`/`lab-10`'s prerequisites all assume
   `ColdChainLakehouse`'s `Customers`/`Stores`/`Freezers` tables are **already populated** by the time
-  `lab-00` finishes — but nothing in the current design (script or labs) actually runs
+  `lab-08` finishes — but nothing in the current design (script or labs) actually runs
   `00_LoadReferenceData` before then; running it is only ever framed as a troubleshooting fallback in
-  `lab-00`, never a golden-path step anywhere in Modules 00-02. Either a lab needs an explicit "run this
+  `lab-08`, never a golden-path step anywhere in Modules 08-10. Either a lab needs an explicit "run this
   notebook" step added, or the provisioning script needs to run it (which would mean dropping that bullet
   from "does NOT do") — a real product decision, not something to silently resolve either way.
 - **`fab import` vs `fab deploy`**: the script uses the more verbose but individually-verifiable
@@ -173,8 +173,8 @@ These are called out inline in the relevant files too, but collected here for vi
   notebook afterward — confirmed live end-to-end against a real tenant, including a fully
   `--non-interactive` run with zero extra sign-ins (an earlier version called the azure-kusto-data SDK
   directly from the laptop, which needed its own separate device-code sign-in; running from a notebook
-  instead reuses the existing `fab auth login` session). This also required rewriting Lab 02 Part E
-  (Module 02), since `FreezerTelemetryEnriched` now already exists by the time attendees get there — see
+  instead reuses the existing `fab auth login` session). This also required rewriting Lab 10 Part E
+  (Module 10), since `FreezerTelemetryEnriched` now already exists by the time attendees get there — see
   `artifacts/Eventhouse/HOW-TO-EXPORT.md`.
 - **Real bug, since fixed: `ifnotexists` is not valid Kusto syntax.** An idempotency pass had changed
   `.create table X (...)` to the invalid `.create table X ifnotexists (...)`; with
@@ -207,10 +207,10 @@ These are called out inline in the relevant files too, but collected here for vi
   that's the floor now, both in `requirements.txt` and via an explicit version check in
   `check_fab_installed()` (parses `fab --version`, not just checks that it responds). See
   `setup/README.md`'s maintainer notes.
-- **Lab 00: the notebook-run step was real but effectively invisible — fixed.** Reported as "the Lakehouse
+- **Lab 08: the notebook-run step was real but effectively invisible — fixed.** Reported as "the Lakehouse
   doesn't have the tables provisioned." `provision_fabric_iq.py` deliberately only imports
   `00_LoadReferenceData`, never runs it (a considered pedagogical choice, reconfirmed when asked directly
-  — kept intentionally manual, unlike the KQL schema). But Lab 00's steps never had an explicit "run the
+  — kept intentionally manual, unlike the KQL schema). But Lab 08's steps never had an explicit "run the
   notebook" instruction; it only existed as a troubleshooting fallback under a step that itself claimed
   the tables would already be listed — a state that's impossible, since the notebook's `saveAsTable()`
   calls are what create the tables at all, not just populate them. Added a real, numbered, required step
@@ -221,7 +221,7 @@ These are called out inline in the relevant files too, but collected here for vi
   script failed with `python3 ...` but worked with `python ...`. Root cause: python.org/winget installers
   provide `python`/`py`, not `python3` (a macOS/Linux convention) — confirmed by the tester that this
   holds even inside an activated venv, which doesn't get its own `python3.exe` on Windows either. Every
-  labs's literal copy-paste `python3 <script>` code block (Lab 00 steps 1/3/4, Lab 02's generator step and
+  labs's literal copy-paste `python3 <script>` code block (Lab 08 steps 1/3/4, Lab 10's generator step and
   its "before you begin" check) now shows the Windows `python` equivalent inline, matching the
   `source .venv/bin/activate # macOS/Linux — Windows: ...` convention already used for venv activation.
   `check_environment.py`'s own printed "what to run next" hint and `run-setup.ps1`'s warning text (both
@@ -229,11 +229,11 @@ These are called out inline in the relevant files too, but collected here for vi
   now OS-aware too. Added one authoritative callout explaining the pattern to `PREREQUISITES.md` §4 so
   future doc additions don't need to rediscover this.
 - **`publish-attendee-labs.yml` no longer ships theory files.** `modules/` has two file kinds per module:
-  `lab-*.md` (attendee-facing, hands-on) and `theory-*.md`/`00-theory-kickoff-and-scenario.md`
+  `lab-*.md` (attendee-facing, hands-on) and `theory-*.md`/`08-theory-kickoff-and-scenario.md`
   (presenter-only — theory is delivered live, not as a doc attendees read). The publish workflow's
   `safe_rsync` for `modules/` copied the whole directory with no filtering; added `--exclude="*theory*"`
-  (one broad pattern to catch both naming conventions, module 00's differently-ordered name included,
-  rather than two exact patterns that could miss a future naming drift). `06-wrapup-and-resources.md`
+  (one broad pattern to catch both naming conventions, module 08's differently-ordered name included,
+  rather than two exact patterns that could miss a future naming drift). `14-wrapup-and-resources.md`
   deliberately stays published — it's attendee-facing content, just not literally a "lab." Also fixed 5
   "Continue to Module N" end-of-lab links that pointed at the *next* module's theory file (which would
   have 404'd for real attendees the moment this shipped) to point at that module's lab file instead —
@@ -242,12 +242,12 @@ These are called out inline in the relevant files too, but collected here for vi
   reading the pattern.
 - **OS-differing commands now use explicit paired blocks, not inline `# Windows: ...` comments.** The
   earlier `python3 script.py          # Windows: python script.py` single-line style (added when fixing
-  the python3-vs-python bug) is easy to miss or copy the wrong half of. Every such command across Lab 00,
-  Lab 02, `setup/README.md`, and `PREREQUISITES.md` is now a fully separate, bold-labeled
+  the python3-vs-python bug) is easy to miss or copy the wrong half of. Every such command across Lab 08,
+  Lab 10, `setup/README.md`, and `PREREQUISITES.md` is now a fully separate, bold-labeled
   **macOS/Linux:**/**Windows (PowerShell):** block pair (or, for brief troubleshooting-note asides, an
   inline `(**Windows:** ...)` parenthetical) — each block is complete and ready to paste with no
   substitution needed, and the bold OS labels are easy to Ctrl+F for.
-- **Module 03's exact click-paths** (ontology UI) were grounded against live Microsoft Learn docs at
+- **Module 11's exact click-paths** (ontology UI) were grounded against live Microsoft Learn docs at
   authoring time but not a live tenant walkthrough — this is the single highest-risk lab in the section
   (preview UI). See `docs/risk-fallback-plan.md`.
 - **Screenshots** (`assets/screenshots/**/step-NN.png`) are placeholders only — none have been captured

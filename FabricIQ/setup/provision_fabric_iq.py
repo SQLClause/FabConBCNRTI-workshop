@@ -40,12 +40,12 @@ WHAT THIS SCRIPT DOES:
        run_kql_schema().
     8. Verifies the workspace now contains all five expected items.
     9. Prints a summary with a deep link into the workspace and a pointer to
-       modules/module-00-welcome-and-setup/lab-00-environment-setup-and-verify.md.
+       modules/module-08-welcome-and-setup/lab-08-environment-setup-and-verify.md.
 
 WHAT THIS SCRIPT DELIBERATELY DOES NOT DO:
     - It does NOT create the Ontology, Data Agent, or Operations Agent items.
       Those are (a) still preview / not reliably scriptable via `fab`, and
-      (b) the whole teaching point of Modules 03-04 -- attendees build them
+      (b) the whole teaching point of Modules 11-12 -- attendees build them
       live. See BUILD_PLAN.md for the reasoning.
     - It does NOT run the 00_LoadReferenceData notebook for you. Importing a
       notebook item does not execute it; running it (and watching the three
@@ -58,7 +58,7 @@ WHAT THIS SCRIPT DELIBERATELY DOES NOT DO:
     - It does NOT configure the Eventstream's custom-endpoint connection
       string into the telemetry generator. That connection string is only
       obtainable from the Fabric portal *after* the Eventstream item exists
-      in *your* workspace, so it can't be scripted -- lab-02 walks you
+      in *your* workspace, so it can't be scripted -- lab-10 walks you
       through the one manual copy/paste step.
 
 USAGE:
@@ -118,7 +118,7 @@ DEFAULT_REPO_URL = "https://github.com/SQLClause/FabConBCNRTI-workshop.git"
 REPO_SUBDIR_TO_FABRICIQ = "FabricIQ"  # FabricIQ/ lives at this path inside the repo
 
 PREREQUISITES_PATH = "prerequisites/PREREQUISITES.md"
-LAB00_PATH = "modules/module-00-welcome-and-setup/lab-00-environment-setup-and-verify.md"
+LAB08_PATH = "modules/module-08-welcome-and-setup/lab-08-environment-setup-and-verify.md"
 
 # The KQL database's schema is a single, fixed, tightly-coupled pairing (one
 # database, one script) -- not manifest-driven like the five workspace items,
@@ -758,7 +758,7 @@ def create_notebook_item(
     `--output_format json` -- the same class of confirmation-prompt issue
     already worked around with `-f` in create_kql_database_item() and
     create_eventstream_item(), just missed here originally since it's only
-    reproducible without `--force` (Lab 00's documented command has no
+    reproducible without `--force` (Lab 08's documented command has no
     flags at all).
     """
     target = f"{workspace_path}/{item.name}.{item.type}"
@@ -1219,7 +1219,7 @@ def print_summary(
             f'    Everything else: fab import "{workspace_name}.Workspace/<Name>.<Type>" -i artifacts/<Type>/<Name>.<Type> -f'
         )
 
-    print(f"\nNext step: {LAB00_PATH}")
+    print(f"\nNext step: {LAB08_PATH}")
     print("=" * 70)
 
 

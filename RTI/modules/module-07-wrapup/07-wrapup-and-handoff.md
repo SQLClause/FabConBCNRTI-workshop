@@ -43,7 +43,7 @@ and a live-refreshing dashboard keep consuming it. Do these now:
    rule. **Open** `TransitAutomation` → **Stop** `Reference file landed`.
 3. **Close** the `TransitOpsDashboard` browser tab (live refresh only runs while it's open).
 
-Everything is preserved; **Resume** and **Start** bring it all back after the conference. Brian's Module 00
+Everything is preserved; **Resume** and **Start** bring it all back after the conference. Brian's Module 08
 lab checks this state before you provision the `Fabric IQ` workspace.
 
 *Adapted from: [Pause and resume data streams](https://learn.microsoft.com/fabric/real-time-intelligence/event-streams/pause-resume-data-streams)*

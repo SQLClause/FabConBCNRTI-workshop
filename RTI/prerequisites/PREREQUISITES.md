@@ -8,7 +8,7 @@ needs a tenant-admin action beyond what that checklist already covers.
 ## 1. Attendees
 
 - [ ] A laptop with a current browser (Edge or Chrome). **Nothing to install** for the morning. The afternoon's
-      Fabric IQ half installs Git and Python live in its Module 00; if you want to get ahead, follow
+      Fabric IQ half installs Git and Python live in its Module 08; if you want to get ahead, follow
       [`../../FabricIQ/prerequisites/PREREQUISITES.md`](../../FabricIQ/prerequisites/PREREQUISITES.md) §4 during the lunch break.
 - [ ] Your Microsoft-provided sign-in for this event.
 

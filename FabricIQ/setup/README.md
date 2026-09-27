@@ -5,7 +5,7 @@ workspace, pinned to a non-trial capacity, containing a Lakehouse, an
 Eventhouse/KQL database, an Eventstream, and a reference-data notebook.
 
 **Attendees**: you run this live, with the room, as Part A of
-[Lab 00](../modules/module-00-welcome-and-setup/lab-00-environment-setup-and-verify.md) — the steps
+[Lab 08](../modules/module-08-welcome-and-setup/lab-08-environment-setup-and-verify.md) — the steps
 below are the same ones that lab walks you through. Running it here ahead of time is optional (see
 [`prerequisites/PREREQUISITES.md`](../prerequisites/PREREQUISITES.md)), not required.
 
@@ -116,7 +116,7 @@ workspace and provision the five items.
    2, no extra sign-in needed. Skip with `--skip-kql-schema`.
 8. Verifies all five items landed in the workspace.
 9. Prints a summary with a workspace deep link and a pointer to
-   `modules/module-00-welcome-and-setup/lab-00-environment-setup-and-verify.md`.
+   `modules/module-08-welcome-and-setup/lab-08-environment-setup-and-verify.md`.
 
 ## Flags
 
@@ -163,7 +163,7 @@ check there first for the underlying fix.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `error: externally-managed-environment` on `pip install` | Your system Python (Homebrew/python.org/most Linux distros) blocks pip installs outside a venv (PEP 668). | Run `python3 check_environment.py` (**Windows:** `python check_environment.py`), activate the venv it creates, then re-run `pip install -r requirements.txt`. |
-| `Command not found: fab` | Fabric CLI isn't installed. | `pip install ms-fabric-cli` (or `pip install -r requirements.txt`), confirm with `fab --version`. See Lab 00, Part A, steps 1 and 3. |
+| `Command not found: fab` | Fabric CLI isn't installed. | `pip install ms-fabric-cli` (or `pip install -r requirements.txt`), confirm with `fab --version`. See Lab 08, Part A, steps 1 and 3. |
 | `Fabric CLI X.Y.Z is too old (need 1.7.0+)` | An older `fab` is on your PATH — e.g. from a system-wide install, a different venv, or a stale `requirements.txt` resolution. | `pip install -U ms-fabric-cli`, confirm with `fab --version`. |
 | `ls .capacities -l --output_format json` fails / "json output mode not supported" | Same root cause as above, but caught late — this is what an old `fab` actually looks like if it slips past Step 1 somehow (e.g. a patched or standalone copy of this script without the version check). | Same fix: `pip install -U ms-fabric-cli`. |
 | `Command not found: git` | Git isn't installed. | Run `python3 check_environment.py` (**Windows:** `python check_environment.py`) for an OS-specific install command, or see PREREQUISITES.md's "Before you clone" section. |
@@ -339,7 +339,7 @@ check there first for the underlying fix.
   `FreezerTelemetryEnriched` materialized view, then deletes the throwaway
   notebook. Skip with `--skip-kql-schema`. See
   `artifacts/Eventhouse/HOW-TO-EXPORT.md` for the full writeup, including
-  the note on how this changed Module 02's Lab 02 Part E (attendees now
+  the note on how this changed Module 10's Lab 10 Part E (attendees now
   explain/confirm the view rather than creating it, since it already exists
   by the time they get there).
 - **`ifnotexists` is not valid Kusto syntax — a real bug that shipped and

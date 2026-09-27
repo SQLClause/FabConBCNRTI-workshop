@@ -1,4 +1,4 @@
-# Module 04 Theory: Agent Patterns over Real-Time and Semantic Layers
+# Module 12 Theory: Agent Patterns over Real-Time and Semantic Layers
 
 **Duration:** 15 minutes
 **Format:** Presenter-led discussion, no hands-on activity in this part.
@@ -10,12 +10,12 @@
 - Understand how Activator Ontology Rules are the connective tissue that turns an Operations Agent's
   monitoring into a real alert or action, expressed in business language instead of a raw threshold.
 - Preview the two agents and the one rule this module's lab builds.
-- Understand — ahead of Module 05 — why an ontology-grounded agent's answers are more trustworthy than
+- Understand — ahead of Module 13 — why an ontology-grounded agent's answers are more trustworthy than
   an agent with free-form access to tables.
 
 ## From ontology to action
 
-Module 03 gave you `ColdChainOntology`: entity types `Customer`, `Store`, and `Freezer`, wired together by
+Module 11 gave you `ColdChainOntology`: entity types `Customer`, `Store`, and `Freezer`, wired together by
 relationships (`Store`—has—>`Freezer`, `Customer`—shops at—>`Store`) and bound to real data in
 `ColdChainLakehouse` and `ColdChainEventhouse`. Up to this point, the ontology has been **descriptive** —
 a governed model of the business that a human can browse and query directly in the Ontology (preview)
@@ -41,7 +41,7 @@ differ in *where* the agent lives and *what kind of experience* it offers.
 
 Today's lab builds the first two directly. Foundry IQ and the Copilot Studio MCP connector matter for the
 same reason a REST API matters even if you're not calling it today: they mean the ontology you designed in
-Module 03 isn't a Fabric-only asset. The same governed entity types, relationships, and rules can be
+Module 11 isn't a Fabric-only asset. The same governed entity types, relationships, and rules can be
 exposed as an MCP server and consumed by a custom agent stack, or wired into a Copilot Studio flow — the
 ontology becomes the shared source of truth across whatever surface an agent needs to live on.
 
@@ -101,7 +101,7 @@ terms — "Freezer running warm" — rather than "`KQLDatabase.FreezerTelemetryR
 named condition on a named business entity. This module's lab builds exactly one such rule, named
 `Freezer running warm`, that fires when a `Freezer`'s `TemperatureC` stays above roughly -12°C for a
 sustained window — simulating a door left open or a compressor fault, which is precisely the anomaly the
-Module 02 synthetic telemetry generator periodically injects.
+Module 10 synthetic telemetry generator periodically injects.
 
 > 🎤 Facilitator note: emphasize the word *sustained*. A rule that fires on any single reading above -12°C
 > would also fire on a momentary door-open-and-closed blip. A temporal condition — "above threshold for N
@@ -117,17 +117,17 @@ By the end of this module's lab, three new things exist, all grounded in `ColdCh
    and relationship names.
 2. **`ColdChainOperationsAgent`** — configured to continuously monitor the `Freezer` entity type.
 3. **`Freezer running warm`** — an Activator Ontology Rule on `Freezer.TemperatureC`, wired to a Teams or
-   email action, that fires in business language when the Module 02 generator's synthetic anomaly lands.
+   email action, that fires in business language when the Module 10 generator's synthetic anomaly lands.
 
-## Looking ahead to Module 05
+## Looking ahead to Module 13
 
 Every answer `ColdChainDataAgent` gives you in the lab is constrained to entities and properties that
 *exist in the ontology* — it cannot silently query a table that isn't modeled, or invent a relationship
-that wasn't defined. That constraint is exactly what Module 05 picks up: an ontology-grounded agent's
+that wasn't defined. That constraint is exactly what Module 13 picks up: an ontology-grounded agent's
 answers are more trustworthy specifically *because* they're boxed in this way, not despite it. Free-form
 table access gives an agent more room to hallucinate a plausible-sounding but ungoverned answer; ontology
 grounding trades some of that flexibility for an answer you can actually trace back to a defined entity,
-property, and binding. Module 05 covers how to prompt, validate, and audit that trust in practice.
+property, and binding. Module 13 covers how to prompt, validate, and audit that trust in practice.
 
 <!-- facilitator: if the room is short on time, the four-agent landscape table is the part safest to
 compress to a quick read-through — the two hands-on agents (Data Agent, Operations Agent) and the rule are
@@ -137,4 +137,4 @@ what the lab actually needs attendees to understand deeply. -->
 > Foundry IQ or the MCP connector here, a one-paragraph mention each is enough since neither is built
 > hands-on today.
 
-Continue to [Lab 04: Build a Data Agent and Operations Agent](lab-04-build-data-agent-and-operations-agent.md).
+Continue to [Lab 12: Build a Data Agent and Operations Agent](lab-12-build-data-agent-and-operations-agent.md).

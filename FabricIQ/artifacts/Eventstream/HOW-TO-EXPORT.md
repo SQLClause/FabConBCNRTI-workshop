@@ -32,7 +32,7 @@ tenant-verified definition into this folder before the event.
      obtainable from the portal *after* the item exists, which is exactly why
      `setup/provision_fabric_iq.py` deliberately stops at creating the
      Eventstream item and hands off the "copy the connection string" step to
-     the attendee during `lab-02` (see `BUILD_PLAN.md`, provisioning step 9).
+     the attendee during `lab-10` (see `BUILD_PLAN.md`, provisioning step 9).
 4. **Configure the destination — the KQL database:**
    - Select **Add destination > Eventhouse**.
    - **Workspace**: your scratch workspace. **Eventhouse**: `ColdChainEventhouse`.
@@ -91,7 +91,7 @@ item is created in *their* workspace. This is expected and is why:
 - `setup/provision_fabric_iq.py` provisions the Eventstream item but cannot
   and does not attempt to configure `artifacts/generator/freezer_telemetry_generator.py`
   automatically.
-- Each attendee must, during `lab-02`, open their own
+- Each attendee must, during `lab-10`, open their own
   `FreezerTelemetryEventstream` → source node → **Details** pane → copy the
   **Event Hub-compatible connection string**, and paste it into the
   `# TODO` marker at the top of `freezer_telemetry_generator.py`.

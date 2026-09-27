@@ -12,7 +12,7 @@
 // run it manually, section by section, in a KQL Queryset attached to
 // ColdChainEventhouse > ColdChainKQLDB if you ever need to.
 //
-// This is also a teaching artifact for Module 02 ("Telemetry + semantic
+// This is also a teaching artifact for Module 10 ("Telemetry + semantic
 // context, grounding signals"): it shows the classic RTI pattern of
 //   raw fact stream --(lookup enrichment)--> latest-state materialized view
 // which is exactly what a Fabric IQ ontology later projects into entity
@@ -28,7 +28,7 @@
 //     LATEST reading per FreezerId (arg_max by Timestamp), enriched with the
 //     store and freezer attributes via the `lookup` operator. This enriched,
 //     always-current view is what downstream consumers (dashboards, the
-//     Fabric IQ ontology's Freezer entity, Activator rules in Module 04)
+//     Fabric IQ ontology's Freezer entity, Activator rules in Module 12)
 //     should query -- never the raw table directly.
 // =============================================================================
 
@@ -193,7 +193,7 @@ datatable (FreezerId: string, StoreId: string, Model: string, Capacity: long, In
 // Confirm the enriched view has one row per freezer, with store/model filled in:
 //   FreezerTelemetryEnriched | order by FreezerId asc
 //
-// Module 04 preview -- this is the shape of query an Activator rule (or the
+// Module 12 preview -- this is the shape of query an Activator rule (or the
 // Fabric IQ Operations Agent) will use to flag a freezer drifting toward
 // failure. TemperatureC above -12C is our "door open / compressor fault"
 // anomaly threshold; see artifacts/generator/freezer_telemetry_generator.py

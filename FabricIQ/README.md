@@ -20,7 +20,7 @@ tutorial and Digital Twin Builder bus-tutorial pattern rather than inventing a n
 
 | Folder | Contents |
 |---|---|
-| `prerequisites/` | **Read this first if you are hosting this session, or forward it to your tenant admin if you're attending.** The only things that must happen before the event — tenant-admin settings and capacity access that can't be fixed live. Attendee software install + provisioning happens live in Module 00 now, not as homework. |
+| `prerequisites/` | **Read this first if you are hosting this session, or forward it to your tenant admin if you're attending.** The only things that must happen before the event — tenant-admin settings and capacity access that can't be fixed live. Attendee software install + provisioning happens live in Module 08 now, not as homework. |
 | `setup/` | The provisioning script (`provision_fabric_iq.py`) that creates the "Fabric IQ" workspace and its RTI plumbing (Lakehouse, Eventhouse, Eventstream, notebook) via the Fabric CLI (`fab`). |
 | `artifacts/` | Fabric item definitions and sample data the provisioning script imports. |
 | `modules/` | Theory + hands-on lab content, one pair per module, in delivery order. |
@@ -34,7 +34,7 @@ tutorial and Digital Twin Builder bus-tutorial pattern rather than inventing a n
    to whoever is, **at least two weeks before the event** — it's short on purpose and only covers the
    handful of tenant-level settings that genuinely can't be fixed live.
 2. Nothing else to do ahead of time. Bring a laptop with admin rights to install software, and start at
-   [`modules/module-00-welcome-and-setup/lab-00-environment-setup-and-verify.md`](modules/module-00-welcome-and-setup/lab-00-environment-setup-and-verify.md)
+   [`modules/module-08-welcome-and-setup/lab-08-environment-setup-and-verify.md`](modules/module-08-welcome-and-setup/lab-08-environment-setup-and-verify.md)
    on the day — Part A walks you through cloning this repo, installing dependencies, and running the
    provisioning script live, in the room.
 3. Already ran the setup yourself ahead of time? Great — skip straight to Part B of that same lab.

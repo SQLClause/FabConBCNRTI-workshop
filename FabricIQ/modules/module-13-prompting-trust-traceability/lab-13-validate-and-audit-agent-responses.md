@@ -1,10 +1,10 @@
-# Lab 05: Validate and Audit Agent Responses
+# Lab 13: Validate and Audit Agent Responses
 
-**Duration:** 5 minutes as scheduled (down from 20 — this module's time was cut to fund Module 00's
-expanded live setup, see `docs/agenda.md`). If Module 03/04 ran on time and there's spare room in the
+**Duration:** 5 minutes as scheduled (down from 20 — this module's time was cut to fund Module 08's
+expanded live setup, see `docs/agenda.md`). If Module 11/12 ran on time and there's spare room in the
 schedule, run this hands-on as originally written; otherwise default to a facilitator-led walkthrough on
-the instructor workspace per the note in `slides/module-05-slides.md`.
-**Prerequisites:** Module 04 complete — `ColdChainDataAgent` and `ColdChainOperationsAgent` exist in the
+the instructor workspace per the note in `slides/module-13-slides.md`.
+**Prerequisites:** Module 12 complete — `ColdChainDataAgent` and `ColdChainOperationsAgent` exist in the
 "Fabric IQ" workspace, both grounded in `ColdChainOntology`, and the `Freezer running warm` Activator rule
 has fired at least once.
 
@@ -17,15 +17,15 @@ has fired at least once.
   action.
 
 > 🎤 Facilitator note: this lab is the section's designated time-box buffer. It's intentionally lighter on
-> new construction than Modules 03–04 and heavier on inspection and discussion — every step below can be
+> new construction than Modules 11–12 and heavier on inspection and discussion — every step below can be
 > demonstrated on the projector as a group instead of run individually. See the fallback note at the end
-> of this lab before you start if Module 03 or 04 ran long.
+> of this lab before you start if Module 11 or 12 ran long.
 
 ## Before you begin
 
 Confirm your environment matches this state before starting:
 - [ ] The "Fabric IQ" workspace contains `ColdChainDataAgent` and `ColdChainOperationsAgent`, both created
-      in Module 04.
+      in Module 12.
 - [ ] `ColdChainOperationsAgent` is in a **Started**/**Running** state and its **History** (or
       **Activity**) view shows at least one activation of the `Freezer running warm` rule. If nothing has
       fired yet, wait a few minutes — the agent evaluates rules on a running interval — or ask a
@@ -41,7 +41,7 @@ Confirm your environment matches this state before starting:
    never defined, for example: `What is the warranty expiration date on Freezer F-1042's compressor?` (no
    warranty property exists anywhere in the ontology) — and **send** it.
 
-   ![Step 2](../../assets/screenshots/lab-05/step-02.png)
+   ![Step 2](../../assets/screenshots/lab-13/step-02.png)
 
    > ✅ Expected result: the agent declines or hedges — it says it doesn't have that information, or
    > offers only the properties it *does* know about (`Model`, `Capacity`, `InstallDate`, `TemperatureC`,
@@ -52,7 +52,7 @@ Confirm your environment matches this state before starting:
 
    If the agent *does* answer with a specific fabricated value instead of declining, that's a genuinely
    interesting (not embarrassing) teaching moment — it means the underlying model filled a gap the
-   ontology didn't cover. Use it to reinforce the point from Module 05's theory: grounding narrows what an
+   ontology didn't cover. Use it to reinforce the point from Module 13's theory: grounding narrows what an
    agent *can* correctly answer, but doesn't by itself guarantee every ungrounded question gets refused.
    Rephrase toward an in-scope question afterward so the room also sees the contrast.
    </details>
@@ -90,7 +90,7 @@ Confirm your environment matches this state before starting:
    | take 20
    ```
 
-   ![Step 5](../../assets/screenshots/lab-05/step-05.png)
+   ![Step 5](../../assets/screenshots/lab-13/step-05.png)
 
    > ✅ Expected result: a row (or rows) appear whose `TemperatureC` value and timestamp match what
    > triggered the alert — this is the raw signal at the bottom of the trace chain, one query away from
@@ -109,7 +109,7 @@ Confirm your environment matches this state before starting:
    **use** the **Copy code** (or equivalent "view query") option to inspect the actual condition it
    evaluates.
 
-   ![Step 6](../../assets/screenshots/lab-05/step-06.png)
+   ![Step 6](../../assets/screenshots/lab-13/step-06.png)
 
    > ✅ Expected result: the rule's condition is readable as a concrete query against the `TemperatureC`
    > property and a threshold — not a hidden setting you have to infer from behavior. Compare it against
@@ -131,8 +131,8 @@ Confirm your environment matches this state before starting:
 
 ## If time is short: accepted compression
 
-Per [`docs/risk-fallback-plan.md`](../../docs/risk-fallback-plan.md), Module 05 is this section's
-designated time-box buffer. If Module 03 or 04 ran long, it is an **explicitly accepted compression** to
+Per [`docs/risk-fallback-plan.md`](../../docs/risk-fallback-plan.md), Module 13 is this section's
+designated time-box buffer. If Module 11 or 12 ran long, it is an **explicitly accepted compression** to
 skip individual hands-on repetition of Steps 2–6 and instead run them once, facilitator-led, on the
 projector — attendees watch and discuss rather than each clicking through the same trace on their own
 machine. Do not skip Step 2 (the ambiguous-question moment) or the discussion in Step 7 even under time
@@ -154,4 +154,4 @@ At the end of this lab, you should be able to:
 
 Nothing new was created in your workspace this module — `ColdChainDataAgent`, `ColdChainOperationsAgent`,
 `ColdChainOntology`, and the `Freezer running warm` rule are exactly what they were at the end of Module
-04. Continue to [Module 06: Wrap-up and Resources](../module-06-wrapup/06-wrapup-and-resources.md).
+04. Continue to [Module 14: Wrap-up and Resources](../module-14-wrapup/14-wrapup-and-resources.md).

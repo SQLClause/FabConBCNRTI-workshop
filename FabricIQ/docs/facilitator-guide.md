@@ -30,30 +30,30 @@ generating" section.
 
 ## Session order assumption
 
-This section runs **after** Johan's Real-Time Intelligence half. Module 00/01 assume attendees already
+This section runs **after** Johan's Real-Time Intelligence half. Module 08/09 assume attendees already
 know Eventstream/Eventhouse/Activator at a basic level and give only a light recap. If the running order
-ever changes, Module 01's theory needs real RTI-fundamentals content added — flag this to whoever edits
+ever changes, Module 09's theory needs real RTI-fundamentals content added — flag this to whoever edits
 the agenda if the day's order shifts.
 
 ## Timing cues
 
 See [`agenda.md`](agenda.md) for the full table. Two built-in flex points:
 
-- **Module 00 (40 min)** now assumes most of the room is provisioning live for the first time, not
+- **Module 08 (40 min)** now assumes most of the room is provisioning live for the first time, not
   verifying pre-done work — attendees are no longer expected to have run the setup script before
   arriving. Budget it as real hands-on setup time, and protect it from running over: it took 20 minutes
-  from Module 05's buffer to make room in the agenda, so there's less slack downstream than there used to
+  from Module 13's buffer to make room in the agenda, so there's less slack downstream than there used to
   be. Anyone who *did* pre-run the script skips to Part B of the lab and finishes early — point them
-  ahead to Module 01's reading, or have them help a neighbor, rather than let the room wait idle.
-- **Module 05 is the buffer** — now only 15 minutes to start with. If Module 03 or 04 (both touch preview
-  UI) run long, compress Module 05's lab to a facilitator-led walkthrough with less hands-on time — do
-  not cut Module 03/04 short, since ontology design and agent patterns are this section's core learning
+  ahead to Module 09's reading, or have them help a neighbor, rather than let the room wait idle.
+- **Module 13 is the buffer** — now only 15 minutes to start with. If Module 11 or 12 (both touch preview
+  UI) run long, compress Module 13's lab to a facilitator-led walkthrough with less hands-on time — do
+  not cut Module 11/12 short, since ontology design and agent patterns are this section's core learning
   objectives.
 
 ## If something breaks live
 
 See [`risk-fallback-plan.md`](risk-fallback-plan.md) for the per-module risk table and fallback
-narration scripts. In short: Module 03 (Ontology) and Module 04 (Data Agent/Operations Agent) are the
+narration scripts. In short: Module 11 (Ontology) and Module 12 (Data Agent/Operations Agent) are the
 highest-risk, preview-UI-dependent labs — have the screenshot fallback sequences open in a browser tab
 before the session starts, just in case.
 

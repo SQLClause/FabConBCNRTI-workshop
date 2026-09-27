@@ -21,7 +21,7 @@ Temperature model: a bounded random walk around a cold-chain setpoint of
 -18C. Periodically (per freezer, at random), an "anomaly episode" is
 injected: the temperature drifts upward toward -10C over a few minutes
 (simulating a door left open or a compressor fault), then recovers. This is
-the exact signal that Module 04's Activator/ontology rules are built to
+the exact signal that Module 12's Activator/ontology rules are built to
 detect live during the workshop -- do not "fix" the anomaly logic without
 checking whether a later lab's expected threshold (-12C, see the KQL
 script's sanity-check comments) still lines up.
@@ -72,7 +72,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-# TODO: paste your Eventstream custom endpoint connection info here -- see lab-02.
+# TODO: paste your Eventstream custom endpoint connection info here -- see lab-10.
 #
 # 1. In the Fabric portal, open FreezerTelemetryEventstream in edit mode.
 # 2. Select the custom-endpoint SOURCE node ("FreezerTelemetrySource").
@@ -183,7 +183,7 @@ def build_producer(connection_string: str, eventhub_name: str | None):
         sys.exit(
             "EVENTSTREAM_CONNECTION_STRING is still the placeholder value.\n"
             "Open freezer_telemetry_generator.py and paste your Eventstream "
-            "custom endpoint connection string at the top of the file -- see lab-02."
+            "custom endpoint connection string at the top of the file -- see lab-10."
         )
 
     kwargs = {"conn_str": connection_string}

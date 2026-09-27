@@ -1,18 +1,18 @@
-# Module 03 Theory: Ontology Design Essentials for Operational AI
+# Module 11 Theory: Ontology Design Essentials for Operational AI
 
 **Duration:** 15 minutes
-**Prerequisites:** Module 02 complete — `ColdChainKQLDB` contains a populated `FreezerTelemetryEnriched` table with live, grounded `TemperatureC` and `DoorOpen` readings per `FreezerId`.
+**Prerequisites:** Module 10 complete — `ColdChainKQLDB` contains a populated `FreezerTelemetryEnriched` table with live, grounded `TemperatureC` and `DoorOpen` readings per `FreezerId`.
 
 **Learning objectives**
 - Define entity type, property, and relationship as they exist in Fabric IQ's **Ontology (preview)** item.
 - Understand data binding: how an ontology attaches to OneLake data by reference, without copying it.
 - Understand that an ontology becomes a queryable graph — traversable with GQL, backed by KQL for live signals, and reachable through natural language (NL2Ontology).
-- Apply three design essentials for operational AI scenarios when modeling the retail cold-chain ontology in Lab 03.
+- Apply three design essentials for operational AI scenarios when modeling the retail cold-chain ontology in Lab 11.
 - Know exactly which prerequisite you cannot fix live if it's missing.
 
 ## Where we are in the story
 
-Module 02 ended with a working pipeline: raw freezer telemetry, landed in `ColdChainEventhouse`, transformed by an update policy and a materialized view into `FreezerTelemetryEnriched` — live temperature and door-state readings, each one already tagged with the `FreezerId` that produced it. That's real-time data with a little bit of shape, but it still isn't *business meaning*. `FreezerTelemetryEnriched` doesn't know that a `FreezerId` belongs to a store, that the store belongs to a region, or that a customer's loyalty tier might matter when you decide how urgently to respond to a warm freezer.
+Module 10 ended with a working pipeline: raw freezer telemetry, landed in `ColdChainEventhouse`, transformed by an update policy and a materialized view into `FreezerTelemetryEnriched` — live temperature and door-state readings, each one already tagged with the `FreezerId` that produced it. That's real-time data with a little bit of shape, but it still isn't *business meaning*. `FreezerTelemetryEnriched` doesn't know that a `FreezerId` belongs to a store, that the store belongs to a region, or that a customer's loyalty tier might matter when you decide how urgently to respond to a warm freezer.
 
 That durable layer of business meaning — the thing that lets a person or an AI agent ask "which stores have a freezer running warm right now?" instead of writing a KQL join by hand every time — is what Fabric IQ's **Ontology** item provides. This module builds it, live, on top of the plumbing you already have.
 
@@ -45,7 +45,7 @@ Practical implications this brings for design:
 Creating an ontology item automatically provisions a paired **Graph in Microsoft Fabric** item. Nodes in that graph are entity instances; edges are relationship instances. This gives you:
 
 - **Federated querying** — the ontology layer routes a query to whichever engine actually holds the answer (GQL against the graph, KQL against Eventhouse) and returns a single, business-shaped result, instead of you writing cross-engine joins by hand.
-- **Natural-language querying (NL2Ontology)** — a Fabric Data Agent can translate a plain-English question like "which freezers are above their safe temperature right now?" into a structured query that respects the ontology's definitions: the right filters, the right joins via relationships, the right units. Module 04 builds this agent directly on top of what you create today.
+- **Natural-language querying (NL2Ontology)** — a Fabric Data Agent can translate a plain-English question like "which freezers are above their safe temperature right now?" into a structured query that respects the ontology's definitions: the right filters, the right joins via relationships, the right units. Module 12 builds this agent directly on top of what you create today.
 - **Visual exploration** — the entity type details view (Configure / Instances / Overview tabs) lets you browse instances, inspect a single Freezer's static and live properties side by side, and expand a full graph view to see how everything connects.
 
 ## Design essentials for operational AI
@@ -56,17 +56,17 @@ Three things matter more here than in a general-purpose data model, because this
 
 **2. Keep relationships meaningful to the business, not just foreign-key mechanics.** A relationship type is named like a verb a business person would actually say — *Store has Freezer*, *Customer shops at Store* — not "StoreFreezerLink" or "FK_Store_Freezer". The underlying mechanism is still a matched key column (`StoreId`, `HomeStoreId`), but the name is what an agent and a human both read when reasoning about the graph. Microsoft's own troubleshooting guidance for data agents backs this up directly: vague or generic query results are frequently traced back to entity and relationship names that aren't meaningful or documented.
 
-**3. Design for what an agent will need to ask later.** Every entity, property, and relationship name you choose today becomes part of the vocabulary Module 04's Data Agent uses to answer questions. If "is this freezer's temperature outside a safe range, and which store and customer does that affect" isn't answerable by walking the entities and relationships you build today, no amount of clever prompting in Module 04 will fix it after the fact. Model the business question first; the schema follows.
+**3. Design for what an agent will need to ask later.** Every entity, property, and relationship name you choose today becomes part of the vocabulary Module 12's Data Agent uses to answer questions. If "is this freezer's temperature outside a safe range, and which store and customer does that affect" isn't answerable by walking the entities and relationships you build today, no amount of clever prompting in Module 12 will fix it after the fact. Model the business question first; the schema follows.
 
 ## Prerequisites — the one thing you cannot fix live
 
 The Ontology (preview) item type will simply **not appear** under **+ New item** unless a Fabric tenant administrator has explicitly enabled it — there is no in-session workaround. Before today, your tenant admin needed to enable:
 
 - **Enable Ontology item (preview)** (tenant setting)
-- The Azure OpenAI / Copilot tenant settings required for Fabric Data Agent (needed later, in Module 04, but worth confirming now since it's the same admin action)
+- The Azure OpenAI / Copilot tenant settings required for Fabric Data Agent (needed later, in Module 12, but worth confirming now since it's the same admin action)
 - A non-trial capacity (F2+ or P1+) — Ontology, Graph, and Data Agent are not supported on trial capacities
 
-See [`prerequisites/PREREQUISITES.md`](../../prerequisites/PREREQUISITES.md) for the full checklist. If Lab 03's first step shows no "Ontology (preview)" option, stop immediately rather than troubleshooting in place — see the lab's troubleshooting block for what to do instead.
+See [`prerequisites/PREREQUISITES.md`](../../prerequisites/PREREQUISITES.md) for the full checklist. If Lab 11's first step shows no "Ontology (preview)" option, stop immediately rather than troubleshooting in place — see the lab's troubleshooting block for what to do instead.
 
 ## The worked example: `ColdChainOntology`
 
@@ -87,6 +87,6 @@ Today you build one ontology item, named `ColdChainOntology`, with this design:
 
 > 🎤 Facilitator note: if the room is tight on time, the binding-not-copying concept and the "refresh isn't automatic" caveat are the two ideas worth protecting — cutting the rest of the conceptual framing is safer than cutting either of those, since both prevent confusion five minutes into the lab.
 
-<!-- facilitator: this is also the natural moment to preview that Module 04's Data Agent quality is directly downstream of how well-named these entities/relationships/properties are — plant that seed here so it lands again in Module 04 instead of feeling new. -->
+<!-- facilitator: this is also the natural moment to preview that Module 12's Data Agent quality is directly downstream of how well-named these entities/relationships/properties are — plant that seed here so it lands again in Module 12 instead of feeling new. -->
 
-Continue to [Lab 03: Build the Retail Cold-Chain Ontology](lab-03-build-retail-coldchain-ontology.md).
+Continue to [Lab 11: Build the Retail Cold-Chain Ontology](lab-11-build-retail-coldchain-ontology.md).

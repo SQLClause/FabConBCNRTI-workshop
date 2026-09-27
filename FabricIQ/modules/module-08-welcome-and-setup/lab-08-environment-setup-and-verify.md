@@ -1,4 +1,4 @@
-# Lab 00: Set Up and Verify Your Environment
+# Lab 08: Set Up and Verify Your Environment
 
 **Duration:** 35 minutes
 **Prerequisites:** Microsoft is providing the Fabric tenant/capacity and a dedicated user account for
@@ -88,7 +88,7 @@ The Ontology/Data Agent preview settings, a non-trial capacity, and Contributor 
    ```
 
    > ✅ Expected result: ends with `ENVIRONMENT READY`, and `fab --version` now works. This installs
-   > `ms-fabric-cli`, `pyyaml`, and `azure-eventhub` (the last one is for Module 02's telemetry generator,
+   > `ms-fabric-cli`, `pyyaml`, and `azure-eventhub` (the last one is for Module 10's telemetry generator,
    > not this script).
 
    <details>
@@ -129,7 +129,7 @@ The Ontology/Data Agent preview settings, a non-trial capacity, and Contributor 
    <summary>Troubleshooting — no non-trial capacity available, or a trial-capacity warning</summary>
 
    **Stop here — this specific problem cannot be fixed live.** Ontology, Graph, and Data Agent features
-   do not work on trial (FT1) capacities, and every module from 03 onward will fail all afternoon if you
+   do not work on trial (FT1) capacities, and every module from 11 onward will fail all afternoon if you
    proceed on one anyway. This shouldn't happen — Microsoft is providing a dedicated non-trial capacity
    per attendee — so if you see this, don't spend your Part A time troubleshooting it yourself:
    - **Flag a facilitator immediately.** This means the Microsoft-provided account/capacity isn't set up
@@ -145,7 +145,7 @@ The Ontology/Data Agent preview settings, a non-trial capacity, and Contributor 
 
    > ✅ Expected result: a summary block printing `[OK]` for all five items plus the KQL schema step,
    > ending with a deep link into the workspace. This typically takes a few minutes — while it runs, this
-   > is a good moment to skim ahead to Module 01.
+   > is a good moment to skim ahead to Module 09.
 
    <details>
    <summary>Troubleshooting — `[FAILED]` or `MISSING` items in the summary</summary>
@@ -163,14 +163,14 @@ Continue from here whether you just finished Part A or arrived with your workspa
 6. **Open** [app.fabric.microsoft.com](https://app.fabric.microsoft.com) in your browser and sign in if
    prompted.
 
-   ![Step 6](../../assets/screenshots/lab-00/step-01.png)
+   ![Step 6](../../assets/screenshots/lab-08/step-01.png)
 
    > ✅ Expected result: the Fabric portal home page loads, showing your recent items and a workspace list
    > in the left navigation.
 
 7. **Click** **Workspaces** in the left navigation, then **click** the **Fabric IQ** workspace.
 
-   ![Step 7](../../assets/screenshots/lab-00/step-02.png)
+   ![Step 7](../../assets/screenshots/lab-08/step-02.png)
 
    <details>
    <summary>Troubleshooting</summary>
@@ -194,7 +194,7 @@ Continue from here whether you just finished Part A or arrived with your workspa
    - `FreezerTelemetryEventstream` (Eventstream)
    - `00_LoadReferenceData` (Notebook)
 
-   ![Step 8](../../assets/screenshots/lab-00/step-03.png)
+   ![Step 8](../../assets/screenshots/lab-08/step-03.png)
 
    <details>
    <summary>Troubleshooting</summary>
@@ -206,7 +206,7 @@ Continue from here whether you just finished Part A or arrived with your workspa
    </details>
 
    > ✅ Expected result: all five items are present. You do **not** see an Ontology, Graph, or Data Agent
-   > item yet — those don't exist yet on purpose. We build them live starting in Module 03.
+   > item yet — those don't exist yet on purpose. We build them live starting in Module 11.
 
 9. **Click** **00_LoadReferenceData** in the workspace item list to open the notebook, then **click**
    **Run all** on the ribbon.
@@ -234,14 +234,14 @@ Continue from here whether you just finished Part A or arrived with your workspa
 10. **Click** **ColdChainLakehouse** to open it, then **expand** the **Tables** node in the left Explorer
     pane if it isn't already expanded.
 
-    ![Step 10](../../assets/screenshots/lab-00/step-04.png)
+    ![Step 10](../../assets/screenshots/lab-08/step-04.png)
 
     > ✅ Expected result: three Delta tables are listed — `Customers`, `Stores`, `Freezers`.
 
 11. **Click** each of the three tables in turn and **confirm** each one shows rows of data in the preview
     pane, not an empty table.
 
-    ![Step 11](../../assets/screenshots/lab-00/step-05.png)
+    ![Step 11](../../assets/screenshots/lab-08/step-05.png)
 
     <details>
     <summary>Troubleshooting</summary>
@@ -252,14 +252,14 @@ Continue from here whether you just finished Part A or arrived with your workspa
     </details>
 
     > ✅ Expected result: `Customers`, `Stores`, and `Freezers` each contain multiple rows of reference
-    > data — this is the static business context Module 02 grounds live telemetry against.
+    > data — this is the static business context Module 10 grounds live telemetry against.
 
     *Adapted from: [Get started with Fabric IQ](https://learn.microsoft.com/fabric/iq/get-started-with-fabric-iq)*
 
 12. **Go back** to the workspace item list and **click** **ColdChainEventhouse** to open it, then **click**
     the **ColdChainKQLDB** database in the left Explorer pane.
 
-    ![Step 12](../../assets/screenshots/lab-00/step-06.png)
+    ![Step 12](../../assets/screenshots/lab-08/step-06.png)
 
     > ✅ Expected result: the KQL database opens with a query editor pane and `FreezerTelemetryRaw` listed
     > as a table under the database.
@@ -271,11 +271,11 @@ Continue from here whether you just finished Part A or arrived with your workspa
     | take 10
     ```
 
-    ![Step 13](../../assets/screenshots/lab-00/step-07.png)
+    ![Step 13](../../assets/screenshots/lab-08/step-07.png)
 
     > ✅ Expected result: the query runs successfully and returns **zero rows**. This is expected, not a
     > bug — the `FreezerTelemetryRaw` table exists and is ready to receive data, but the synthetic freezer
-    > telemetry generator hasn't been started yet. That happens in Module 02. If the query errors instead
+    > telemetry generator hasn't been started yet. That happens in Module 10. If the query errors instead
     > of returning zero rows (for example, "table not found"), that's the actual problem to flag — see
     > Troubleshooting below.
 
@@ -297,7 +297,7 @@ Continue from here whether you just finished Part A or arrived with your workspa
 ## If your environment isn't ready
 
 If Part A didn't complete, or any of Part B's checks fail and re-running `provision_fabric_iq.py` doesn't
-fix it within a couple of minutes, don't burn your whole Module 00 slot troubleshooting solo:
+fix it within a couple of minutes, don't burn your whole Module 08 slot troubleshooting solo:
 
 - **Pair with a neighbor** whose environment verified successfully — this is the designated fallback per
   [`docs/risk-fallback-plan.md`](../../docs/risk-fallback-plan.md), and it's completely fine to follow
@@ -310,7 +310,7 @@ fix it within a couple of minutes, don't burn your whole Module 00 slot troubles
 
 > 🎤 Facilitator note: pause here and ask who's seeing something different before moving on — this is now
 > a 35-minute agenda slot precisely because most of the room is provisioning live, not just stragglers;
-> don't let it silently eat into Module 01's time regardless.
+> don't let it silently eat into Module 09's time regardless.
 
 <!-- facilitator: the most common failure here is signing in with a different account than the one the script authenticated with — check that first before assuming the script itself failed. The second most common is a trial capacity slipping through despite the hard-block warning; don't let anyone proceed on one. -->
 
@@ -320,10 +320,10 @@ At the end of this lab, your "Fabric IQ" workspace should contain:
 - `ColdChainLakehouse` with three populated tables: `Customers`, `Stores`, `Freezers`
 - `ColdChainEventhouse` with a `ColdChainKQLDB` database whose full schema is already in place: an empty
   (but queryable) `FreezerTelemetryRaw` table, seeded `StoresDim`/`FreezersDim` dimension tables, and the
-  `FreezerTelemetryEnriched` materialized view (also empty until telemetry flows in Module 02) — all
+  `FreezerTelemetryEnriched` materialized view (also empty until telemetry flows in Module 10) — all
   applied automatically by `provision_fabric_iq.py`'s KQL schema step
 - `FreezerTelemetryEventstream`
 - `00_LoadReferenceData` notebook
 
 No Ontology, Graph, Data Agent, or Operations Agent items exist yet — that's expected. Continue to
-[Module 01: Architecture & Context](../module-01-architecture-and-context/lab-01-explore-workspace-and-data-landscape.md).
+[Module 09: Architecture & Context](../module-09-architecture-and-context/lab-09-explore-workspace-and-data-landscape.md).

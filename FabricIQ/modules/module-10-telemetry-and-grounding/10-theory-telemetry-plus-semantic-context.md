@@ -1,4 +1,4 @@
-# Theory 02: Telemetry + Semantic Context
+# Theory 10: Telemetry + Semantic Context
 
 **Duration:** 15 minutes
 **Module:** 02 – Telemetry and Grounding
@@ -10,14 +10,14 @@
 - State which mechanism this lab uses, and why.
 - Recognize the general "streaming + reference data" pattern well enough to apply it outside the cold-chain scenario.
 
-## Where Module 01 left off
+## Where Module 09 left off
 
-Module 01 stood up `FreezerTelemetryRaw` in the `ColdChainKQLDB` KQL database — a table of bare events:
+Module 09 stood up `FreezerTelemetryRaw` in the `ColdChainKQLDB` KQL database — a table of bare events:
 `FreezerId`, `StoreId`, `Timestamp`, `TemperatureC`, `DoorOpen`. It also made a deliberately uncomfortable
 observation: a row that says `F-1042, -9.0, false` tells you almost nothing on its own. Is -9°C fine? Is it
 an emergency? The event doesn't say, because the event *can't* say — a temperature reading has no opinion
 about what temperature it's supposed to be. That opinion lives somewhere else: in a store's operating
-policy, a freezer model's rated range, a maintenance contract. Module 02 is about closing that gap.
+policy, a freezer model's rated range, a maintenance contract. Module 10 is about closing that gap.
 
 ## The general pattern: fast data needs slow context
 
@@ -109,8 +109,8 @@ every freezer, right now, with full business context attached?" That's an aggreg
 has no clean way to also express "and only keep the latest one per freezer" — that collapsing step is
 exactly what materialized views exist for. The actual KQL that defines this view lives at
 [`artifacts/Eventhouse/ColdChainKQLDB.kql`](../../artifacts/Eventhouse/ColdChainKQLDB.kql);
-`provision_fabric_iq.py` applies it automatically during Module 00 setup, and Lab 02 walks through reading
-and confirming it rather than having you author it from scratch, since Module 03 is where the workshop's
+`provision_fabric_iq.py` applies it automatically during Module 08 setup, and Lab 10 walks through reading
+and confirming it rather than having you author it from scratch, since Module 11 is where the workshop's
 hands-on KQL and ontology authoring time is spent.
 
 > 🎤 Facilitator note: if someone asks "why not both?" — that's a fair question. Real systems often chain
@@ -142,11 +142,11 @@ ungrounded numbers, then watch `FreezerTelemetryEnriched` turn the same numbers 
 ## What's next
 
 The upcoming lab has you:
-1. Get live telemetry flowing into `ColdChainEventhouse` for the first time (Module 01 left that table
+1. Get live telemetry flowing into `ColdChainEventhouse` for the first time (Module 09 left that table
    empty).
 2. Run the materialized view script that produces `FreezerTelemetryEnriched`.
 3. Confirm, by querying both tables side by side, that raw events have been grounded with store and
    freezer context.
 
-Continue to [Lab 02: Join Streaming and Reference
-Data](lab-02-join-streaming-and-reference-data.md).
+Continue to [Lab 10: Join Streaming and Reference
+Data](lab-10-join-streaming-and-reference-data.md).

@@ -1,7 +1,7 @@
-# Lab 03: Build the Retail Cold-Chain Ontology
+# Lab 11: Build the Retail Cold-Chain Ontology
 
 **Duration:** 30 minutes
-**Prerequisites:** Module 02 complete. The "Fabric IQ" workspace contains `ColdChainLakehouse` (with populated `Customers`, `Stores`, `Freezers` tables) and `ColdChainEventhouse` (with a `ColdChainKQLDB` KQL database containing a populated `FreezerTelemetryEnriched` table). The Module 02 freezer telemetry generator is still running.
+**Prerequisites:** Module 10 complete. The "Fabric IQ" workspace contains `ColdChainLakehouse` (with populated `Customers`, `Stores`, `Freezers` tables) and `ColdChainEventhouse` (with a `ColdChainKQLDB` KQL database containing a populated `FreezerTelemetryEnriched` table). The Module 10 freezer telemetry generator is still running.
 
 **Learning objectives**
 - Create an **Ontology (preview)** item and build entity types, properties, and relationships entirely through the no-code configuration canvas.
@@ -14,8 +14,8 @@
 Confirm your environment matches this state before starting:
 - [ ] The "Fabric IQ" workspace exists and you have **Contributor** role or higher on it (Viewer access is not sufficient for ontology configuration).
 - [ ] `ColdChainLakehouse` contains populated `Customers` (CustomerId, Name, HomeStoreId, LoyaltyTier), `Stores` (StoreId, StoreName, Region, City), and `Freezers` (FreezerId, StoreId, Model, Capacity, InstallDate) tables.
-- [ ] `ColdChainEventhouse` → `ColdChainKQLDB` contains a `FreezerTelemetryEnriched` table with rows carrying live `TemperatureC` and `DoorOpen` values per `FreezerId`, from Module 02.
-- [ ] The Module 02 freezer telemetry generator script is still running in a terminal somewhere — if you stopped it, restart it now, since Step 20 of this lab depends on fresh events still arriving.
+- [ ] `ColdChainEventhouse` → `ColdChainKQLDB` contains a `FreezerTelemetryEnriched` table with rows carrying live `TemperatureC` and `DoorOpen` values per `FreezerId`, from Module 10.
+- [ ] The Module 10 freezer telemetry generator script is still running in a terminal somewhere — if you stopped it, restart it now, since Step 20 of this lab depends on fresh events still arriving.
 - [ ] Your tenant admin has enabled the **Ontology item (preview)** tenant setting, per [`prerequisites/PREREQUISITES.md`](../../prerequisites/PREREQUISITES.md). **This cannot be fixed during the workshop.**
 
 <details>
@@ -35,7 +35,7 @@ If Step 1 below doesn't show **Ontology (preview)** as a search result under **+
 
 1. **Open** the **Fabric IQ** workspace. **Click** the **+ New item** button.
 
-   ![Step 1](../../assets/screenshots/lab-03/step-01.png)
+   ![Step 1](../../assets/screenshots/lab-11/step-01.png)
 
 2. **Type** `Ontology` in the item-type search box, and confirm **Ontology (preview)** appears as a result.
 
@@ -51,7 +51,7 @@ If Step 1 below doesn't show **Ontology (preview)** as a search result under **+
 
 4. **Type** `ColdChainOntology` in the **Name** field and **click** **Create**.
 
-   ![Step 4](../../assets/screenshots/lab-03/step-04.png)
+   ![Step 4](../../assets/screenshots/lab-11/step-04.png)
 
    > ✅ Expected result: a blank ontology configuration canvas opens, with an empty **Explorer** pane on the left.
 
@@ -69,7 +69,7 @@ If Step 1 below doesn't show **Ontology (preview)** as a search result under **+
 
 6. **Type** `Store` in the name field and **click** **Add Entity Type**.
 
-   ![Step 6](../../assets/screenshots/lab-03/step-06.png)
+   ![Step 6](../../assets/screenshots/lab-11/step-06.png)
 
    > ✅ Expected result: a `Store` entity type card appears on the configuration canvas and in the Explorer pane.
 
@@ -79,7 +79,7 @@ If Step 1 below doesn't show **Ontology (preview)** as a search result under **+
 
 9. **Select** the `ColdChainLakehouse` lakehouse, **click** **Next**, then **select** the `Stores` table and **click** **Select**.
 
-   ![Step 9](../../assets/screenshots/lab-03/step-09.png)
+   ![Step 9](../../assets/screenshots/lab-11/step-09.png)
 
 10. Review the **Properties** section — it auto-populates `StoreId`, `StoreName`, `Region`, and `City` from the source columns. Keep the default property names.
 
@@ -109,7 +109,7 @@ If Step 1 below doesn't show **Ontology (preview)** as a search result under **+
 
 18. **Click** **Save** on the data binding, confirm success, then **click** **Cancel**.
 
-    ![Step 18](../../assets/screenshots/lab-03/step-18.png)
+    ![Step 18](../../assets/screenshots/lab-11/step-18.png)
 
     > ✅ Expected result: the `Customer` entity type shows 4 properties, all bound to the `Customers` table. `HomeStoreId` is present as a plain property for now — it becomes the join key for a relationship in Step 30.
 
@@ -123,7 +123,7 @@ If Step 1 below doesn't show **Ontology (preview)** as a search result under **+
 
 21. On the **Configure** page, **expand** **Manage property bindings** and **select** **Add binding and properties**.
 
-    ![Step 21](../../assets/screenshots/lab-03/step-21.png)
+    ![Step 21](../../assets/screenshots/lab-11/step-21.png)
 
 22. **Select** **Add data binding > Lakehouse table**.
 
@@ -145,15 +145,15 @@ This is the step that makes `Freezer` different from `Store` and `Customer`: the
 
 28. Under **Binding selection**, **expand** **Add data binding** and **select** **Eventhouse table or materialized view** (not **Lakehouse table** this time).
 
-    ![Step 28](../../assets/screenshots/lab-03/step-28.png)
+    ![Step 28](../../assets/screenshots/lab-11/step-28.png)
 
 29. **Select** the `ColdChainEventhouse` eventhouse, then **select** the `ColdChainKQLDB` database's `FreezerTelemetryEnriched` table, and **click** **Add** (or **Select**).
 
-30. A **Timeseries data** section appears. For **Timestamp column**, **select** the column in `FreezerTelemetryEnriched` that represents event time (for example, `Timestamp` or `IngestionTime` — use whichever column your Module 02 materialized view produced).
+30. A **Timeseries data** section appears. For **Timestamp column**, **select** the column in `FreezerTelemetryEnriched` that represents event time (for example, `Timestamp` or `IngestionTime` — use whichever column your Module 10 materialized view produced).
 
 31. Scroll to the **Properties** section. Columns from `FreezerTelemetryEnriched` auto-populate here, including `FreezerId` and possibly `StoreId` — these show an error because they're already bound in the static data binding from Step 26. **Use the trash icon** to delete these duplicated properties, keeping only `TemperatureC` and `DoorOpen`.
 
-    ![Step 31](../../assets/screenshots/lab-03/step-31.png)
+    ![Step 31](../../assets/screenshots/lab-11/step-31.png)
 
 32. **Click** **Save** on the data binding. Confirm the success message, then **click** **Cancel** to close.
 
@@ -177,7 +177,7 @@ This is the step that makes `Freezer` different from `Store` and `Customer`: the
 
 35. **Type** `has` for **Relationship type name**. **Set** **Origin entity type** to `Store` and **Target entity type** to `Freezer`. **Click** **Create**.
 
-    ![Step 35](../../assets/screenshots/lab-03/step-35.png)
+    ![Step 35](../../assets/screenshots/lab-11/step-35.png)
 
 36. **Select** the new `has` relationship on the canvas to open its configuration.
 
@@ -215,7 +215,7 @@ This is the step that makes `Freezer` different from `Store` and `Customer`: the
 
 47. **Select** any row (a specific `FreezerId`) to open its instance view.
 
-    ![Step 47](../../assets/screenshots/lab-03/step-47.png)
+    ![Step 47](../../assets/screenshots/lab-11/step-47.png)
 
     > ✅ Expected result: tiles show this freezer's static properties (`Model`, `Capacity`, `InstallDate`), a relationship tile linking it to its `Store`, and a **Timeseries** tile showing a recent `TemperatureC`/`DoorOpen` snapshot.
 
@@ -239,8 +239,8 @@ This is the step that makes `Freezer` different from `Store` and `Customer`: the
 Work through these in order — the most common cause is listed first:
 
 1. **You haven't refreshed the graph.** This is expected behavior, not a bug: per Microsoft's documentation, updates to an upstream data source are not visible in the ontology item until you manually refresh, or until a scheduled refresh runs. Repeat Steps 49–51.
-2. **The Module 02 generator script has stopped.** Check the terminal it's running in — if the process has exited or errored, no new events are arriving at all. Restart it per the Module 02 lab's instructions.
-3. **`FreezerTelemetryEnriched` itself isn't gaining new rows.** Run `FreezerTelemetryEnriched | summarize max(Timestamp)` (substituting your actual timestamp column name) directly in a KQL queryset against `ColdChainKQLDB`. If that timestamp is old, the problem is upstream of the ontology entirely — check the Eventstream and the update policy / materialized view from Module 02, not the ontology binding.
+2. **The Module 10 generator script has stopped.** Check the terminal it's running in — if the process has exited or errored, no new events are arriving at all. Restart it per the Module 10 lab's instructions.
+3. **`FreezerTelemetryEnriched` itself isn't gaining new rows.** Run `FreezerTelemetryEnriched | summarize max(Timestamp)` (substituting your actual timestamp column name) directly in a KQL queryset against `ColdChainKQLDB`. If that timestamp is old, the problem is upstream of the ontology entirely — check the Eventstream and the update policy / materialized view from Module 10, not the ontology binding.
 4. **You're looking at the wrong `FreezerId`.** Confirm the instance you opened in Step 47 matches a `FreezerId` the generator is actually producing events for.
 
 </details>
@@ -258,6 +258,6 @@ At the end of this lab, `ColdChainOntology` in your "Fabric IQ" workspace should
   - `ShopsAt` — `Customer` → `Store`, matched on `HomeStoreId` = `StoreId`
 - A working **Graph** view showing all three entity types connected by both relationships, refreshable on demand to reflect newly arrived telemetry.
 
-You now have a durable, queryable business-meaning layer sitting on top of live and static data — without a single row of it having been copied. Module 04 builds a Data Agent directly on top of `ColdChainOntology`, using exactly the entity, property, and relationship names you just chose.
+You now have a durable, queryable business-meaning layer sitting on top of live and static data — without a single row of it having been copied. Module 12 builds a Data Agent directly on top of `ColdChainOntology`, using exactly the entity, property, and relationship names you just chose.
 
-Continue to [Module 04: Agent Patterns](../module-04-agent-patterns/lab-04-build-data-agent-and-operations-agent.md).
+Continue to [Module 12: Agent Patterns](../module-12-agent-patterns/lab-12-build-data-agent-and-operations-agent.md).

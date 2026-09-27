@@ -113,7 +113,7 @@ use `datetime_utc_to_local(PolledAtUtc, 'Europe/Madrid')` for anything a human r
    "Watch `StopCode`: it must be `long`."
 
 > 🎤 Facilitator note: if you're short on time, the update-policy-vs-materialized-view table and demo steps 2–3
-> are the parts to protect. Brian's Module 02 theory covers the same comparison in depth from the other side; tell the room they'll
+> are the parts to protect. Brian's Module 10 theory covers the same comparison in depth from the other side; tell the room they'll
 > hear it again this afternoon and that's on purpose.
 
 *Sources: [Eventhouse overview](https://learn.microsoft.com/fabric/real-time-intelligence/eventhouse),
