@@ -83,7 +83,7 @@ should make so the two halves tell one story.
   numbers.
 - **Room size is 120.** The IQ half's Module 08 has everyone run `pip install` and `fab auth login` at once; with
   120 laptops on venue Wi-Fi that 40-minute block is the day's biggest network risk. Worth Brian knowing the count
-  and considering a "pre-install over lunch" nudge; RTI's prerequisites already point attendees at his §4 for that.
+  and considering a "pre-install over lunch" nudge; RTI's prerequisites already point attendees at his §1 for that.
 
 - **Accounts and tenant**: both halves use the Microsoft-provided per-attendee account. RTI's prerequisites
   link to IQ's rather than duplicating them.
