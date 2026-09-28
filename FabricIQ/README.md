@@ -21,7 +21,7 @@ tutorial and Digital Twin Builder bus-tutorial pattern rather than inventing a n
 | Folder | Contents |
 |---|---|
 | `prerequisites/` | **Read this first if you are hosting this session, or forward it to your tenant admin if you're attending.** The only things that must happen before the event — tenant-admin settings and capacity access that can't be fixed live. Attendee software install + provisioning happens live in Module 08 now, not as homework. |
-| `setup/` | The provisioning script (`provision_fabric_iq.py`) that creates the "Fabric IQ" workspace and its RTI plumbing (Lakehouse, Eventhouse, Eventstream, notebook) via the Fabric CLI (`fab`). |
+| `setup/` | The provisioning script (`provision_fabric_iq.py`) that creates a per-attendee "Fabric IQ - <user>" workspace and its RTI plumbing (Lakehouse, Eventhouse, Eventstream, notebook) via the Fabric CLI (`fab`). |
 | `artifacts/` | Fabric item definitions and sample data the provisioning script imports. |
 | `modules/` | Theory + hands-on lab content, one pair per module, in delivery order. |
 | `slides/` | Marp-format PowerPoint decks (source `.md` + generated `.pptx`) for presenting the theory portions. |
