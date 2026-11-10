@@ -1,0 +1,29 @@
+// dashboard-tiles.kql
+// Tile queries for BikeOpsDashboard (RTI Express, Lab 03).
+// Every query uses the multi-select parameter _hood (label "Neighbourhood").
+// "Select all" passes an empty list, which isempty(_hood) treats as "no filter".
+
+// T1: map, current state of every station
+StationLatest
+| where isnotnull(Latitude) and isnotnull(Longitude)
+| where isempty(_hood) or Neighbourhood in (_hood)
+| project Street, Neighbourhood, CrewName, Status, No_Bikes, Capacity, MissingBikes = Capacity - No_Bikes, Latitude, Longitude
+
+// T2: time chart, stations reporting Empty / Full per minute
+BikesClean
+| where Timestamp > ago(1h)
+| where isempty(_hood) or Neighbourhood in (_hood)
+| summarize Empty = dcountif(BikepointID, Status == "Empty"), Full = dcountif(BikepointID, Status == "Full") by bin(Timestamp, 1m)
+
+// T3: table, the refill list, grouped by the crew that should go (from the ingest-time lookup)
+StationLatest
+| where Status in ("Empty", "Low")
+| where isempty(_hood) or Neighbourhood in (_hood)
+| project Crew = CrewName, Street, Neighbourhood, Status, Bikes = No_Bikes, Capacity, OccupancyPct, AsOf = Timestamp
+| top 25 by OccupancyPct asc
+| order by Crew asc, OccupancyPct asc
+
+// Parameter query (Lab 03 Part B)
+StationLatest
+| distinct Neighbourhood
+| order by Neighbourhood asc

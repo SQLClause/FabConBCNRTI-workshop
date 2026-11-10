@@ -1,0 +1,7 @@
+CrewId,CrewName,Shift,VanCapacity,HomeDepot
+C01,North Loop,Morning,20,Kings Cross
+C02,River Run,Morning,24,Southwark
+C03,City Sweep,Morning,18,Liverpool Street
+C04,West Wheels,Afternoon,20,Paddington
+C05,East Docks,Afternoon,24,Canary Wharf
+C06,Night Owls,Night,16,Waterloo

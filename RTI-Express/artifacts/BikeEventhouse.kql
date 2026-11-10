@@ -1,0 +1,170 @@
+// BikeEventhouse.kql
+// All KQL for RTI Express, Lab 02 (and the tile queries' dependencies).
+// Run in BikeEventhouse_queryset, database BikeEventhouse.
+//
+// The KQL editor runs ONE block at a time: the block your cursor is in, delimited by blank lines.
+// Every statement below is its own block. Click inside it, then Run (or Shift+Enter).
+//
+// Column spelling: the Bicycles sample writes "Neighbourhood" (British). If A2 shows "Neighborhood",
+// replace the spelling everywhere below before you run B1.
+
+// ---------------------------------------------------------------------------------------------
+// Part A: explore the raw stream
+// ---------------------------------------------------------------------------------------------
+
+// A1: what does an event look like?
+BikesRaw
+| take 10
+
+// A2: which columns and types did the Eventstream destination create?
+BikesRaw
+| getschema
+| project ColumnName, ColumnType
+
+// A3: how much, how many stations, how fresh?
+BikesRaw
+| extend Timestamp = todatetime(Timestamp)
+| summarize Events = count(), Stations = dcount(BikepointID), Oldest = min(Timestamp), Newest = max(Timestamp)
+| extend LagSeconds = datetime_diff('second', now(), Newest)
+
+// A4: event rate per minute
+BikesRaw
+| summarize Events = count() by bin(todatetime(Timestamp), 1m)
+| render timechart
+
+// A5: latest reading per station (arg_max), then roll up by neighbourhood
+BikesRaw
+| extend Timestamp = todatetime(Timestamp), No_Bikes = tolong(No_Bikes)
+| summarize arg_max(Timestamp, *) by BikepointID
+| summarize Stations = count(), EmptyStations = countif(No_Bikes == 0), Bikes = sum(No_Bikes) by Neighbourhood
+| top 10 by EmptyStations desc
+
+// ---------------------------------------------------------------------------------------------
+// Part B: reference data, which crew covers which neighbourhood
+// ---------------------------------------------------------------------------------------------
+// Ops assigns every neighbourhood to one of six rebalancing crews (the same crews as Lab 05's CSV).
+// We don't hard-code neighbourhood names: we take them from your stream and spread them over the
+// crews with a stable hash, so everybody's table has the same shape whatever the sample sends.
+
+// B1: build the dimension table NeighbourhoodCrew
+.set-or-append NeighbourhoodCrew <|
+    BikesRaw
+    | summarize by Neighbourhood = tostring(Neighbourhood)
+    | where isnotempty(Neighbourhood)
+    | extend CrewId = strcat("C0", tostring(hash(Neighbourhood, 6) + 1))
+    | lookup kind = leftouter (
+        datatable(CrewId: string, CrewName: string, Shift: string, HomeDepot: string) [
+            "C01", "North Loop", "Morning", "Kings Cross",
+            "C02", "River Run", "Morning", "Southwark",
+            "C03", "City Sweep", "Morning", "Liverpool Street",
+            "C04", "West Wheels", "Afternoon", "Paddington",
+            "C05", "East Docks", "Afternoon", "Canary Wharf",
+            "C06", "Night Owls", "Night", "Waterloo"
+        ]) on CrewId
+
+// B2: how is the city split between crews?
+NeighbourhoodCrew
+| summarize Neighbourhoods = count() by CrewId, CrewName, HomeDepot
+| order by CrewId asc
+
+// ---------------------------------------------------------------------------------------------
+// Part C: shape and enrich on ingest with an update policy (BikesRaw -> BikesClean)
+// ---------------------------------------------------------------------------------------------
+
+// C1: an update policy that reads ANOTHER table (the lookup) is refused while the source table
+// uses streaming ingestion. Switch BikesRaw to queued ingestion with 10-second batches.
+.alter-merge table BikesRaw policy streamingingestion '{"IsEnabled": false}'
+
+// C2: keep latency low on the queued path
+.alter table BikesRaw policy ingestionbatching '{"MaximumBatchingTimeSpan": "00:00:10", "MaximumNumberOfItems": 1000, "MaximumRawDataSizeMB": 1024}'
+
+// C3: the transformation, as a stored function: type, derive, then look up the crew
+.create-or-alter function with (folder = "Silver", docstring = "Typed, enriched bike station readings with the responsible crew") CleanBikes() {
+    BikesRaw
+    | extend No_Bikes = tolong(No_Bikes), No_Empty_Docks = tolong(No_Empty_Docks),
+             Latitude = toreal(Latitude), Longitude = toreal(Longitude), Timestamp = todatetime(Timestamp)
+    | extend Capacity = No_Bikes + No_Empty_Docks
+    | extend OccupancyPct = iff(Capacity > 0, round(100.0 * No_Bikes / Capacity, 1), real(null))
+    | extend Status = case(No_Bikes == 0, "Empty",
+                           No_Empty_Docks == 0, "Full",
+                           OccupancyPct < 20.0, "Low",
+                           "OK")
+    | project Timestamp, BikepointID = tostring(BikepointID), Street = tostring(Street),
+              Neighbourhood = tostring(Neighbourhood), Latitude, Longitude,
+              No_Bikes, No_Empty_Docks, Capacity, OccupancyPct, Status
+    | lookup kind = leftouter (NeighbourhoodCrew | project Neighbourhood, CrewId, CrewName) on Neighbourhood
+    | extend CrewId = coalesce(CrewId, "-"), CrewName = coalesce(CrewName, "Unassigned")
+}
+
+// C4: does the lookup hit? Every row should have a crew; "Unassigned" means a neighbourhood
+// the dimension table doesn't know yet.
+CleanBikes()
+| summarize Rows = count() by CrewName
+| order by Rows desc
+
+// C5: create BikesClean from the function's output and backfill what has already arrived
+.set-or-append BikesClean <| CleanBikes()
+
+// C6: from now on, every ingestion into BikesRaw also runs CleanBikes() into BikesClean
+.alter table BikesClean policy update @'[{"IsEnabled": true, "Source": "BikesRaw", "Query": "CleanBikes()", "IsTransactional": false, "PropagateIngestionProperties": false}]'
+
+// C7: is it flowing? Run twice, a minute apart: Newest should move.
+BikesClean
+| summarize Rows = count(), Newest = max(Timestamp) by Status
+
+// ---------------------------------------------------------------------------------------------
+// Part D: latest state per station with a materialized view
+// ---------------------------------------------------------------------------------------------
+
+// D1: one row per station, always the newest reading (crew columns included)
+.create materialized-view with (backfill = true) StationLatest on table BikesClean {
+    BikesClean
+    | summarize arg_max(Timestamp, *) by BikepointID
+}
+
+// D2: roughly one row per station (compare with A3's Stations)
+StationLatest
+| count
+
+// D3: health of the view
+.show materialized-view StationLatest
+| project Name, IsHealthy, IsEnabled, MaterializedTo
+
+// ---------------------------------------------------------------------------------------------
+// Part E: a reusable "right now" function for dashboards and alerts
+// ---------------------------------------------------------------------------------------------
+
+// E1
+.create-or-alter function with (folder = "Gold", docstring = "Current station state rolled up per neighbourhood and crew") NeighbourhoodNow() {
+    StationLatest
+    | summarize Stations = count(),
+                Empty = countif(Status == "Empty"), Low = countif(Status == "Low"), Full = countif(Status == "Full"),
+                Bikes = sum(No_Bikes), Docks = sum(Capacity)
+                by Neighbourhood, CrewName
+    | extend PctEmpty = round(100.0 * Empty / Stations, 1)
+    | order by Empty desc, PctEmpty desc
+}
+
+// E2: pick YOUR neighbourhood for Lab 04 from the top rows
+NeighbourhoodNow()
+| take 10
+
+// ---------------------------------------------------------------------------------------------
+// Stretch
+// ---------------------------------------------------------------------------------------------
+
+// S1: workload per crew right now: which van should leave first?
+StationLatest
+| summarize EmptyStations = countif(Status == "Empty"), LowStations = countif(Status == "Low"),
+            BikesNeeded = sum(iff(Status in ("Empty", "Low"), tolong(round(Capacity * 0.5)) - No_Bikes, long(0)))
+            by CrewName
+| order by BikesNeeded desc
+
+// S2: how long has each empty station been empty?
+BikesClean
+| where Timestamp > ago(1h)
+| summarize LastHadBikes = maxif(Timestamp, No_Bikes > 0), arg_max(Timestamp, No_Bikes, Street, Neighbourhood, CrewName) by BikepointID
+| where No_Bikes == 0
+| extend EmptyFor = Timestamp - coalesce(LastHadBikes, ago(1h))
+| top 20 by EmptyFor desc
+| project Street, Neighbourhood, CrewName, EmptyFor, LastHadBikes
